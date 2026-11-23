@@ -49,7 +49,7 @@ def make_workspaces():
     ROOT.mkdir(parents=True, exist_ok=True)
     for i in range(1, 9):
         instr = "claudemd_min" if i <= 4 else "claudemd"
-        subprocess.run([sys.executable, str(KIT / "langleak.py"), "fixture", "ledger", "en", instr, "allow",
+        subprocess.run([sys.executable, str(KIT.parent / "langleak.py"), "fixture", "ledger", "en", instr, "allow",
                         str(ROOT / f"t{i}")], check=True, stdout=subprocess.DEVNULL)
     log("created 8 workspaces")
 

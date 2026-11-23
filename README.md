@@ -1,14 +1,14 @@
-# Claude Code switches to English mid-task: a controlled measurement
+# Claude Code writes its between-tool progress notes in English: a controlled measurement
 
-When the user writes in Korean and Claude Code works through a long tool loop, the short progress messages it writes between tool calls ("Money fixed (10/18). Next: tax.") often come out in English. The final answer of the turn stays Korean (one exception in 274 single-turn runs, in a run that delegated to an English-prompted subagent). This repo holds a small harness that reproduces the switch on synthetic repositories, the raw and per-run results, and what changed the rate.
+When the user writes in Korean and Claude Code works through a tool loop, the short progress messages it writes between tool calls ("Money fixed (10/18). Next: tax.") often come out in English. In most runs where this happened, the first progress message was already English: it is less a mid-task drift than English narration from the start of the loop. The last answer of the turn was Korean in all 274 single-turn runs; one run had an English line ("I'm waiting for the results of the final run.") after its last tool call, before the Korean report. This repo holds a small harness that reproduces the behaviour on synthetic repositories, the raw and per-run results, and what changed the rate.
 
 Related issues: [anthropics/claude-code#32181](https://github.com/anthropics/claude-code/issues/32181), [#96326](https://github.com/anthropics/claude-code/issues/96326), [#96601](https://github.com/anthropics/claude-code/issues/96601).
 
-**Short version.** Tool-output language made no difference. The `language` setting and a one-line CLAUDE.md ("always answer in Korean") each cut the switch but still left it in 25–44% of runs, with or without permission denials. What held was a CLAUDE.md sentence that names the progress messages between tool calls: 0 leaks in 59 runs in Korean, and 1 in 16 when written in English. A longer, more insistent instruction that does not name them leaked as often as the one-liner.
+**Short version.** With a Korean prompt, the `language` setting and generic CLAUDE.md rules ("always answer in Korean", or a longer insistent version) still left English progress messages in about a quarter to nearly half of runs in the comparisons below. Of the CLAUDE.md texts tried, the ones that explicitly covered the progress notes between tool calls leaked in 1 of 48 runs, against 12 of 32 for the two that did not. This is an exploratory result from one model and two small synthetic repositories, and the experiment changed whole texts, so it does not show which part of the wording matters. Localising the repository's docs, logs and test output into Korean did not change the rate detectably.
 
 ## Setup
 
-- Claude Code 2.1.311, headless (`claude -p --output-format stream-json`), model `claude-opus-5-5` unless noted. Experiment v3 also ran `claude-sonnet-5-5` and `claude-fable-5-2`. The Claude Code changelog through 2.1.330 lists no change to this behavior.
+- Claude Code 2.1.311, headless (`claude -p --output-format stream-json`), model `claude-opus-5-5` unless noted. Experiment v3 also ran `claude-sonnet-5-5` and `claude-fable-5-2`. A keyword search of the Claude Code changelog through 2.1.330 found no entry about this behaviour, which does not show that later versions behave the same.
 - `--setting-sources project`, so only the fixture's own `.claude/settings.json` applies. No user-level CLAUDE.md was present.
 - Each run starts in a fresh temp copy of a synthetic Python repo with 8 seeded bugs, a spec and an operations log. The prompt (Korean) asks Claude to fix all failing tests and rerun the suite after each fix.
 - Two codebases: `ledger` (money, tax, discount, invoice, dates, currency, csv, report) and `textkit` (slug, word count, truncate, title, duration, html, palindrome, plural).
@@ -16,7 +16,7 @@ Related issues: [anthropics/claude-code#32181](https://github.com/anthropics/cla
 
 **Classifier.** Code blocks, inline code, URLs, paths, identifiers, file names and `foo()` calls are stripped. A message with no Hangul and at least 8 Latin letters is `en`; no Hangul but kana/CJK is `other` (one run switched to Japanese); a Hangul share of 30% or more of letters is `ko`; anything between is `mixed`. A run "leaks" if at least one progress message is `en` or `other`. `mixed` does not count as a leak.
 
-**Classifier check.** 145 progress messages sampled at random from v4 (`results/output-language/audit_blind_review.csv`) were labelled ko / en / mixed without seeing the classifier's labels: a second model (GPT) drafted the labels and the author reviewed each one. On the question the leak counts depend on, English or not, the two agreed on all 145 (47 English, no false positives or misses). On the three-way label they agreed on 140; the 5 disagreements were all between ko and mixed (e.g. "Bug 8: report — 단수형 처리."), which are both counted as no leak. Short English headers such as "Fix 1: slug" fall under the 8-letter floor and are labelled `empty`, so the leak counts are, if anything, lower bounds.
+**Classifier check.** The v4 audit sample has 150 random progress messages (`results/output-language/audit_sample.csv`). The 5 the classifier labelled `empty` were left out of the blind review; they are short headers, all English ("Fix 1: slug", "**4. title**", "**6. html**", "Fix 1: slug.", "**8. plural**"). The other 145 were labelled ko / en / mixed without seeing the classifier's labels: a second model (GPT) drafted the labels and the author reviewed each one (`audit_blind_review.csv`). Within those 145 the two agreed on English-or-not for all 145 (47 English) and on the three-way label for 140; the 5 disagreements were between ko and mixed. So the classifier missed short English headers, and the audit says nothing about its accuracy on other batches or the TUI transcripts. See also the sensitivity check below.
 
 ## Conditions
 
@@ -31,9 +31,9 @@ Related issues: [anthropics/claude-code#32181](https://github.com/anthropics/cla
 
 Leak rate is per run with a Wilson 95% interval. Tests are two-sided Fisher exact on run counts.
 
-### 1. Tool-output language does not matter (v4, n = 64)
+### 1. Localising docs, logs and test output did not change the rate detectably (v4, n = 64)
 
-v4 crossed task (ledger / textkit) × the language of README, SPEC, logs and test-runner output (en / ko) × instruction (base / lang), 8 runs per cell. The code and its identifiers were identical between en and ko.
+v4 crossed task (ledger / textkit) × the language of README, SPEC, logs and test-runner output (en / ko) × instruction (base / lang), 8 runs per cell. The code and its identifiers were identical between en and ko, so this changes all of those at once; it does not isolate tool output alone.
 
 | | leak runs | non-Korean progress messages |
 |---|---|---|
@@ -46,12 +46,13 @@ v4 crossed task (ledger / textkit) × the language of README, SPEC, logs and tes
 - Output language, within lang: 5/16 vs 3/16, p = 0.69.
 - base vs lang, Korean output: 11/16 vs 3/16, p = 0.011.
 - base vs lang, English output: 9/16 vs 5/16, p = 0.29.
+- base vs lang, both outputs: 20/32 vs 8/32, p = 0.005.
 
-Making the logs, spec and test output Korean did not reduce the switch. The model writes "Money fixed (10/18). Next: tax." just as often when the test runner prints Korean. The `language` setting cuts the number of English messages by about 9×, but a quarter of runs still contain some.
+Both output languages gave 14/32 leaking runs and about a third of progress messages non-Korean (67/194 vs 54/161). With 32 runs per arm the 95% interval for the difference is about −23 to +23 points, so a moderate effect is still possible. In this setup the `language` setting lowered the leak rate (20/32 → 8/32) and cut non-Korean messages about 9×, but a quarter of runs still had some.
 
-### 2. Naming the progress messages is what holds (v8 + v10, n = 80)
+### 2. Texts that covered the progress notes leaked less (v8 + v10, n = 80)
 
-The `wording` experiment reran the English-output v4 cells with five CLAUDE.md texts. Permissions were identical to v4, so most runs also hit denials.
+The `wording` experiment reran the English-output v4 cells with five CLAUDE.md texts. Permissions were identical to v4, so most runs also hit denials. v8 (explicit vs one line) ran first; v10 (the other three texts) was designed after seeing v8 and ran three hours later.
 
 | CLAUDE.md | names the progress messages? | leak runs | non-Korean progress messages |
 |---|---|---|---|
@@ -60,14 +61,16 @@ The `wording` experiment reran the English-output v4 cells with five CLAUDE.md t
 | explicit, written in English | yes | 1/16 (6%, 1–28%) | 1/145 |
 | one line: "항상 한국어로 답하세요." ("Always answer in Korean.") | no | 6/16 (38%, 18–61%) | 6/87 |
 | emphatic: "Every answer must be in Korean. Do not answer in English. Keep code, commands and file names as they are." (in Korean) | no | 6/16 (38%, 18–61%) | 6/68 |
-| *`language` setting (v4, same cells)* | – | 5/16 (31%, 14–56%) | 5/91 |
-| *no instruction (v4, same cells)* | – | 9/16 (56%, 33–77%) | 62/103 |
+| *`language` setting (v4, same cells, earlier batch)* | – | 5/16 (31%, 14–56%) | 5/91 |
+| *no instruction (v4, same cells, earlier batch)* | – | 9/16 (56%, 33–77%) | 62/103 |
 
-Pooled, the three texts that name the progress messages leaked in 1 of 48 runs and the two that do not in 12 of 32 (p < 0.001). The progress clause alone works as well as the full explicit text; length and insistence without it do nothing beyond the one-liner (6/16 vs 6/16). A one-line CLAUDE.md behaves like the `language` setting, so the location of the instruction is not what matters.
+Within each batch the direction is the same: v8 0/16 vs 6/16, v10 1/32 vs 6/16. Pooled, the three texts that covered the progress notes leaked in 1 of 48 runs and the two that did not in 12 of 32 (Fisher p ≈ 0.00004). Treat this as exploratory: v10 was designed after v8, the contrast was not fixed in advance, and with all ten pairwise comparisons Holm-corrected the single v8 comparison (p = 0.018) would not stand alone. The texts also differ in length, scope and wording at once. In particular, the one-line and emphatic texts both say "answer"; the model may read that as the final answer only, and no text here covered "all user-visible text" without naming the progress notes. The 0/16 results for the two Korean texts that named them do not show that they are equally effective, and the similar rates for the one-liner and the `language` setting (an earlier batch) do not show that the instruction's location is irrelevant.
 
-Across every experiment that used the Korean explicit text or the progress clause (v2 6 runs, v3 10 runs over three models, v5 3 long sessions, v7 8 runs, v8 16, v10 16), 0 of 59 leaked (Wilson upper bound 6%). In v3–v9 the `language` setting alone leaked in 22 of 77 runs or sessions (v3 0/10, v4 8/32, v5 3/3, v6 6/8, v7 1/8, v9 4/16).
+As raw counts only (different models, tasks, times, permissions and units): every run or session that used the Korean explicit text or the progress clause had no leak (v2 6 runs, v3 10 runs over three models, v5 3 sessions, v7 8, v8 16, v10 16; 0 of 59). Runs with the `language` setting alone leaked in 22 of 77 (v3 0/10, v4 8/32, v5 3/3 sessions, v6 6/8, v7 1/8, v9 4/16); 3 of the v3 runs were Fable runs that wrote no progress messages at all, so could not leak. These pooled counts are not a risk estimate for other settings.
 
-### 3. The switch happens during long autonomous tool loops, not in answers (v5)
+**Sensitivity.** Counting `mixed` messages as leaks too: explicit-or-clause texts 3/48 vs 16/32 (the two Korean texts stay at 0/32), v4 en vs ko 18/32 vs 14/32. Lowering the English floor from 8 to 7 letters: v4 en and ko each 16/32, wording 1/48 vs 14/32. The weak instructions leak more under looser definitions; the explicit Korean texts stay at zero.
+
+### 3. English progress notes from the start of the tool loop (v4, v5, v8–v10)
 
 v5 ran 16 consecutive Korean turns per session with `claude -p -c` (fix bugs, review each file, write scripts, add tests, add type hints, benchmark, write a changelog…), 3 sessions per condition, about 100 tool calls per session.
 
@@ -77,9 +80,11 @@ v5 ran 16 consecutive Korean turns per session with `claude -p -c` (fix bugs, re
 | lang | 3/3 | 6/49 | 0/48 |
 | claudemd | 0/3 | 0/114 | 0/48 |
 
-17 of base's 19 English messages were in turn 1, the 28-tool bug-fixing turn. Later turns with fewer tool calls rarely leaked. A new Korean user message pulled the progress messages back to Korean. No turn's final answer was ever non-Korean.
+17 of base's 19 English messages were in turn 1, the 28-tool bug-fixing turn; later turns leaked rarely. The later turns also differ in task and tool count, so this does not separate turn length from the effect of a fresh Korean message. With the `language` setting the pattern differed (turn 1: 1/25, later turns: 5/24). No turn's final answer was non-Korean.
 
-### 4. Weak instructions often break at a permission denial, but removing denials did not lower the rate (v6, v7, v9)
+In the single-turn experiments most leaks did not start after Korean narration. In 24 of 28 leaking v4 runs, 11 of 13 in `wording` and 10 of 11 in `no-denials`, no Korean progress message came before the first non-Korean one. The first leak came either right after the first tool calls (tool call 2–5) or, in about half of the leaking v4 runs, when the model started fixing after reading the code (tool call 11–15); either way it was usually the first narration the run wrote.
+
+### 4. Leaks occur right after permission denials and without them (v6, v7, v9)
 
 Many leaks begin with "I'll use the Read tool instead." right after a `Permission to use Bash has been denied` tool result. Every v4 run hit at least one denial, because only `Bash(python3 *)` was allowed.
 
@@ -91,7 +96,7 @@ Splitting v4 and v8 leaks by what came just before the first non-Korean message:
 | `language` setting (v4) | 8 | 7 |
 | one-line CLAUDE.md (v8) | 6 | 5 |
 
-Without an instruction, the model drifts into English anywhere in the loop: 102 of its 109 English messages followed an ordinary tool result. With a weak instruction, it mostly holds until a denial, then writes "I'll use the Read tool instead." in English.
+Without an instruction, 102 of the 109 English messages followed an ordinary tool result. With a weak instruction, most leaking runs started right after a denial, often with "I'll use the Read tool instead."
 
 - v6: all 16 runs hit a denial, and in all 12 leaking runs the first non-Korean message came right after one. The v6 "allow" arm did not remove denials, because the model chains commands with `for` loops.
 - v7 fixed this with a PreToolUse hook that auto-approves non-destructive shell commands inside the workspace. Denials dropped from 11/12 runs to 1/12.
@@ -102,32 +107,33 @@ Without an instruction, the model drifts into English anywhere in the loop: 102 
 | lang | 1/4 | 0/4 |
 | claudemd | 0/4 | 0/4 |
 
-n = 4 per cell is too small to show an effect, so v9 repeated the two weak instructions with the auto-approve hook at n = 8 per cell. One run of 32 still hit a denial.
+n = 4 per cell is too small to show an effect (3/12 vs 1/12 overall, p = 0.59), so v9 repeated the two weak instructions with the auto-approve hook at n = 8 per cell. One run of 32 (`ledger.en.lang/run_06`, no leak) still hit a denial.
 
 | v9, no denials | leak runs | leaks starting right after a denial |
 |---|---|---|
-| `language` setting | 4/16 (25%, 10–49%) | 0/4 |
+| `language` setting | 4/16 assigned (25%, 10–49%); 4/15 with no denial (27%, 11–52%) | 0/4 |
 | one-line CLAUDE.md | 7/16 (44%, 23–67%) | 0/7 |
 
-The rates match the runs with denials (v4 `language` 8/32; v8 one-liner 6/16). Without denials the switch came at the same kind of moment: the planning message right after the first test run ("Fix them one by one, running the whole test suite after each.", "Fix 1/8: slug (SPEC §1)"). A denial is one of the points where the model writes a short self-directed note and that note comes out in English; it is not what causes the switch. The task mattered in both directions (wording: ledger 11/40 vs textkit 2/40; no-denials: ledger 2/16 vs textkit 9/16), which this data cannot explain.
+Comparable cells with denials, from earlier batches: `language` 5/16 (v4, English output), one-liner 6/16 (v8). All 11 v9 leaks happened in runs with no denial, so denials are not necessary for a leak; how much a denial raises the risk is not estimated by this data. Without denials the first leak came at the planning note after the first test run ("Fix them one by one, running the whole test suite after each.", "Fix 1/8: slug (SPEC §1)"). The task mattered in both directions (wording: ledger 11/40 vs textkit 2/40; no-denials: ledger 2/16 vs textkit 9/16), which this data cannot explain.
 
 ### 5. Interactive TUI check (n = 8)
 
-Every run above used headless `claude -p`. As a check on the interactive UI, 8 sessions ran on the same Mac with Claude Code 2.1.311 and the same flags (`--model opus --setting-sources project --permission-mode dontAsk --allowedTools …`) and the auto-approve hook, so no session hit a denial. A driver (`tui/tui_auto.py`) started the UI in a pseudo-terminal, took the default choice on start-up dialogs, typed the prompt, and sent `/exit` when the turn ended. Each session loaded only its own workspace CLAUDE.md (`tui/loaded_memory_files.tsv`).
+Every run above used headless `claude -p`. As a check on the interactive UI, 8 sessions ran on the same Mac (2026-11-23, 22:25–22:35 KST) with Claude Code 2.1.311 and the same flags (`--model opus --setting-sources project --permission-mode dontAsk --allowedTools …`) and the auto-approve hook, so no session hit a denial. A driver (`tui/tui_auto.py`) started the UI in a pseudo-terminal, took the default choice on start-up dialogs, typed the prompt, and sent `/exit` when the turn ended. Each session loaded only its own workspace CLAUDE.md (`tui/loaded_memory_files.tsv`).
 
 | CLAUDE.md | sessions with a leak | non-Korean progress messages |
 |---|---|---|
 | one line ("always answer in Korean") | 0/4 | 0/30 |
 | explicit | 0/4 | 0/35 |
 
-No session switched. At the headless rate for the one-line CLAUDE.md without denials (7/16), 0 of 4 would happen about 10% of the time, so this neither shows that the interactive UI behaves differently nor confirms the headless rate there. It does show the explicit text holding in the UI.
+No session leaked. The comparable headless cell (`ledger`, English output, one-line text, no denials) had 1/8, at which 0 of 4 happens about 59% of the time; the upper 95% bound for 0/4 is 49%. This check is too small to say whether the interactive UI behaves differently or whether either text works better there. Scoring used the session transcripts, not the rendered screen.
 
 ## Limitations
 
 - All measured rates come from headless `-p` runs. The interactive check (section 5) is 8 sessions, driven through a pseudo-terminal rather than typed by a person.
 - Synthetic, small repositories, one natural language (Korean), and one main model (`claude-opus-5-5`) for most runs. #96601 reports the rate rose from Opus 5 to Opus 5.5; this repo has no Opus 5 comparison.
-- n is 3–8 per cell and the intervals are wide. The firm results are the null effect of output language, base vs `language` setting, and naming vs not naming the progress messages; the rest is directional. The v10 wordings were designed after seeing v8.
-- One Claude Code version (2.1.311), all runs on 2026-11-22.
+- n is 3–8 per cell and the intervals are wide. The clearest results are base vs `language` setting in v4 and the within-batch wording contrasts in v8 and v10; the wording result is exploratory (v10 designed after v8) and does not identify which part of the text matters. Comparisons across batches (v4 vs v8 vs v9) are confounded with time of day.
+- One Claude Code version (2.1.311). Headless runs: 2026-11-22 14:47 to 2026-11-23 00:20 KST, by the first and last run logs (v4's `meta.json` start time is when the script was launched; it then waited for a usage reset). TUI check: 2026-11-23.
+- Next experiment worth running: randomise, within one batch, a rule that covers all user-visible text without naming progress notes against one that names them, with matched length and tone, and have the progress messages labelled blind by a person.
 
 ## Reproduce
 
