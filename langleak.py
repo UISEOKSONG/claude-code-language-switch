@@ -14,6 +14,7 @@ Experiments (python3 langleak.py --list):
   wording           five CLAUDE.md wordings, with the same permissions as output-language
   no-denials        language setting vs one-line CLAUDE.md with denials removed
   scope             four CLAUDE.md first sentences with a matched closing sentence (stage 1, see PREREG_scope.md)
+  scope2            stage 2: "all user-visible text" vs "notes left while working", 48 runs each (PREREG_scope2.md)
 
 Usage
   python3 langleak.py run output-language --n 8 --model opus
@@ -111,6 +112,9 @@ EXPERIMENTS = {
     "scope": dict(  # pre-registered in PREREG_scope.md; condition order shuffled within each round
         tasks=["textkit"], olangs=["en"], instrs=["s_all", "s_during", "s_progress", "s_answer"], perms=["allow"],
         name="{task}.{olang}.{instr}", n=16, shuffle=True),
+    "scope2": dict(  # pre-registered in PREREG_scope2.md
+        tasks=["textkit"], olangs=["en"], instrs=["s_all", "s_during"], perms=["allow"],
+        name="{task}.{olang}.{instr}", n=48, shuffle=True),
     "no-denials": dict(
         tasks=["ledger", "textkit"], olangs=["en"], instrs=["lang", "claudemd_min"], perms=["allow"],
         name="{task}.{olang}.{instr}", n=8),
@@ -697,6 +701,14 @@ def classify(text: str) -> str:
 
 LEAK = ("en", "other")
 
+# A line that is only a numbered heading naming a module or spec section, e.g. "**3. truncate**",
+# "Fix 1: slug", "**5. duration** (SPEC 5)". Used for the strict outcome, which ignores such lines.
+HEADER_ONLY = re.compile(r"^\s*(\*\*)?\s*(Fix\s+)?\d+[.):]?\s*[A-Za-z][\w \-]*(\*\*)?\s*(\((SPEC|spec)?\s*§?\d+\))?\s*:?\s*$")
+
+
+def is_strict_leak(text: str, label: str) -> bool:
+    return label in LEAK and not HEADER_ONLY.match(text.strip())
+
 
 def is_denial(content) -> bool:
     s = json.dumps(content, ensure_ascii=False)
@@ -806,6 +818,7 @@ def analyze(exp: str, results: Path) -> None:
                 {f: cond[f] for f in FACTORS}, condition=cond["name"], run=p.stem, model=r["model"],
                 tool_calls=r["tools"], denials=len(r["denials"]), progress_msgs=len(msgs),
                 leak_msgs=len(leaks), leak=int(bool(leaks)),
+                leak_strict=int(any(is_strict_leak(m[0], m[1]) for m in msgs)),
                 first_leak_at_tool=leaks[0][2] if leaks else "",
                 first_leak_after_denial=int(leaks[0][3]) if leaks else "",
                 leak_msgs_after_denial=sum(1 for m in leaks if m[3]),
@@ -835,7 +848,8 @@ def analyze(exp: str, results: Path) -> None:
         mk, mn = sum(r["leak_msgs"] for r in rs), sum(r["progress_msgs"] for r in rs)
         dn = sum(1 for r in rs if r["denials"])
         ad = sum(1 for r in rs if r["first_leak_after_denial"] == 1)
-        print(f"  {label:28s} leak runs {k:2d}/{n:<2d} ({k / n:4.0%}, CI {lo:4.0%}-{hi:4.0%})  "
+        ks = sum(r["leak_strict"] for r in rs)
+        print(f"  {label:28s} leak runs {k:2d}/{n:<2d} ({k / n:4.0%}, CI {lo:4.0%}-{hi:4.0%})  strict {ks:2d}/{n:<2d}  "
               f"non-Korean msgs {mk:3d}/{mn:<3d}  runs w/ denial {dn:2d}  leaks starting after denial {ad:2d}/{k}")
 
     print("\nper condition:")
@@ -856,6 +870,9 @@ def analyze(exp: str, results: Path) -> None:
             if ra and rb:
                 p = fisher_two_sided(ka, len(ra) - ka, kb, len(rb) - kb)
                 print(f"  {f}: {a} {ka}/{len(ra)} vs {b} {kb}/{len(rb)}  p = {p:.4f}")
+                sa, sb = sum(r["leak_strict"] for r in ra), sum(r["leak_strict"] for r in rb)
+                ps = fisher_two_sided(sa, len(ra) - sa, sb, len(rb) - sb)
+                print(f"  {f} (strict): {a} {sa}/{len(ra)} vs {b} {sb}/{len(rb)}  p = {ps:.4f}")
     print(f"\nper-run table: {results / 'summary_runs.csv'}")
     print(f"classifier audit sample: {results / 'audit_sample.csv'}")
 
