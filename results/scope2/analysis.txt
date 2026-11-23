@@ -1,0 +1,18 @@
+
+experiment: scope2
+results:    results/scope2 (raw/scope2.tgz)
+
+per condition:
+  textkit.en.s_all             leak runs 16/48 ( 33%, CI  22%- 47%)  strict 13/48  non-Korean msgs  33/129  runs w/ denial  2  leaks starting after denial  0/16
+  textkit.en.s_during          leak runs  3/48 (  6%, CI   2%- 17%)  strict  3/48  non-Korean msgs   3/395  runs w/ denial  0  leaks starting after denial  0/3
+
+marginals:
+  instr=s_all                  leak runs 16/48 ( 33%, CI  22%- 47%)  strict 13/48  non-Korean msgs  33/129  runs w/ denial  2  leaks starting after denial  0/16
+  instr=s_during               leak runs  3/48 (  6%, CI   2%- 17%)  strict  3/48  non-Korean msgs   3/395  runs w/ denial  0  leaks starting after denial  0/3
+
+Fisher exact, two-sided, run level (pairs of levels, other factors pooled):
+  instr: s_all 16/48 vs s_during 3/48  p = 0.0016
+  instr (strict): s_all 13/48 vs s_during 3/48  p = 0.0119
+
+per-run table: results/scope2 (raw/scope2.tgz)/summary_runs.csv
+classifier audit sample: results/scope2 (raw/scope2.tgz)/audit_sample.csv
