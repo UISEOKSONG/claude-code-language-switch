@@ -133,7 +133,7 @@ No session leaked. The comparable headless cell (`ledger`, English output, one-l
 - Synthetic, small repositories, one natural language (Korean), and one main model (`claude-opus-5-5`) for most runs. #96601 reports the rate rose from Opus 5 to Opus 5.5; this repo has no Opus 5 comparison.
 - n is 3–8 per cell and the intervals are wide. The clearest results are base vs `language` setting in v4 and the within-batch wording contrasts in v8 and v10; the wording result is exploratory (v10 designed after v8) and does not identify which part of the text matters. Comparisons across batches (v4 vs v8 vs v9) are confounded with time of day.
 - One Claude Code version (2.1.311). Headless runs: 2026-11-22 14:47 to 2026-11-23 00:20 KST, by the first and last run logs (v4's `meta.json` start time is when the script was launched; it then waited for a usage reset). TUI check: 2026-11-23.
-- Next experiment worth running: randomise, within one batch, a rule that covers all user-visible text without naming progress notes against one that names them, with matched length and tone, and have the progress messages labelled blind by a person.
+- Next experiment (pre-registered in `PREREG_scope.md`): randomise, within one batch, a rule that covers all user-visible text without naming progress notes against one that names them, with matched length and tone, and have the progress messages labelled blind by a person.
 
 ## Reproduce
 
@@ -155,6 +155,7 @@ Move `~/.claude/CLAUDE.md` aside while running, since Claude Code loads it regar
 | v7 | `permissions` | 4 |
 | v8, v10 | `wording` (v8: explicit and one-line; v10: the other three) | 8 |
 | v9 | `no-denials` | 8 |
+| stage 1 (planned) | `scope`, see `PREREG_scope.md` | 16 |
 
 `legacy/` holds the scripts for the other runs, unchanged from when they ran (some console messages are in Korean): `langleak2.py` (instruction × subagent), `langleak3.py` (three models), `langleak5.py` (16-turn sessions with `-c`), `langleak6.py` (first denial experiment). Their per-run tables are in `results/legacy/`.
 

@@ -13,6 +13,7 @@ Experiments (python3 langleak.py --list):
   permissions       permission denials present / removed x {none, language setting, CLAUDE.md}
   wording           five CLAUDE.md wordings, with the same permissions as output-language
   no-denials        language setting vs one-line CLAUDE.md with denials removed
+  scope             four CLAUDE.md first sentences with a matched closing sentence (stage 1, see PREREG_scope.md)
 
 Usage
   python3 langleak.py run output-language --n 8 --model opus
@@ -69,6 +70,11 @@ CLAUDE_MD = {
     # the explicit wording, written in English
     "explicit_en": "All user-facing text, including progress notes between tool calls, must be in Korean. "
                    "Keep code, commands and file names as they are.\n",
+    # stage-1 "scope" experiment: same closing sentence on every text, so the first sentence is the only difference
+    "s_all": "사용자에게 보이는 모든 글을 한국어로 작성하세요. 코드·명령어·파일명은 원문 그대로 둡니다.\n",
+    "s_during": "작업하는 도중에 사용자에게 남기는 짧은 글도 한국어로 작성하세요. 코드·명령어·파일명은 원문 그대로 둡니다.\n",
+    "s_progress": "도구 호출 사이의 진행 설명도 한국어로 작성하세요. 코드·명령어·파일명은 원문 그대로 둡니다.\n",
+    "s_answer": "항상 한국어로 답하세요. 코드·명령어·파일명은 원문 그대로 둡니다.\n",
 }
 INSTRUCTIONS = ["base", "lang"] + list(CLAUDE_MD)
 
@@ -102,6 +108,9 @@ EXPERIMENTS = {
         tasks=["ledger", "textkit"], olangs=["en"],
         instrs=["claudemd", "claudemd_min", "progress_min", "emphatic", "explicit_en"], perms=["deny"],
         name="{task}.{olang}.{instr}", n=8),
+    "scope": dict(  # pre-registered in PREREG_scope.md; condition order shuffled within each round
+        tasks=["textkit"], olangs=["en"], instrs=["s_all", "s_during", "s_progress", "s_answer"], perms=["allow"],
+        name="{task}.{olang}.{instr}", n=16, shuffle=True),
     "no-denials": dict(
         tasks=["ledger", "textkit"], olangs=["en"], instrs=["lang", "claudemd_min"], perms=["allow"],
         name="{task}.{olang}.{instr}", n=8),
@@ -635,8 +644,13 @@ def cmd_run(args) -> None:
     if stop.exists():
         stop.unlink()
     log = []
+    seed = args.seed if args.seed is not None else int(time.time())
+    meta["order_seed"] = seed
     for i in range(1, args.n + 1):
-        for cond in conditions(args.experiment):
+        conds = conditions(args.experiment)
+        if EXPERIMENTS[args.experiment].get("shuffle"):
+            random.Random(seed * 1000 + i).shuffle(conds)
+        for cond in conds:
             if stop.exists():
                 break
             done = results / cond["name"] / f"run_{i:02d}.jsonl"
@@ -859,6 +873,7 @@ def main() -> None:
     r.add_argument("--claude", default="claude")
     r.add_argument("--resume", default=None, help="continue in an existing results dir, skipping finished runs")
     r.add_argument("--wait-until", default=None, help='start at local time "YYYY-MM-DD HH:MM"')
+    r.add_argument("--seed", type=int, default=None, help="seed for the condition order (experiments with shuffle)")
     fx = sub.add_parser("fixture", help="write one condition's workspace to a folder, e.g. for a manual TUI check")
     fx.add_argument("task", choices=["ledger", "textkit"])
     fx.add_argument("olang", choices=["en", "ko"])
