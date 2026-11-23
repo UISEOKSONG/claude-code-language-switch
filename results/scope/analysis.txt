@@ -1,0 +1,26 @@
+
+experiment: scope
+results:    results/scope (raw/scope.tgz)
+
+per condition:
+  textkit.en.s_all             leak runs  6/16 ( 38%, CI  18%- 61%)  non-Korean msgs  15/59   runs w/ denial  2  leaks starting after denial  0/6
+  textkit.en.s_during          leak runs  0/16 (  0%, CI   0%- 19%)  non-Korean msgs   0/141  runs w/ denial  0  leaks starting after denial  0/0
+  textkit.en.s_progress        leak runs  0/16 (  0%, CI   0%- 19%)  non-Korean msgs   0/166  runs w/ denial  1  leaks starting after denial  0/0
+  textkit.en.s_answer          leak runs 11/16 ( 69%, CI  44%- 86%)  non-Korean msgs  27/62   runs w/ denial  0  leaks starting after denial  0/11
+
+marginals:
+  instr=s_all                  leak runs  6/16 ( 38%, CI  18%- 61%)  non-Korean msgs  15/59   runs w/ denial  2  leaks starting after denial  0/6
+  instr=s_during               leak runs  0/16 (  0%, CI   0%- 19%)  non-Korean msgs   0/141  runs w/ denial  0  leaks starting after denial  0/0
+  instr=s_progress             leak runs  0/16 (  0%, CI   0%- 19%)  non-Korean msgs   0/166  runs w/ denial  1  leaks starting after denial  0/0
+  instr=s_answer               leak runs 11/16 ( 69%, CI  44%- 86%)  non-Korean msgs  27/62   runs w/ denial  0  leaks starting after denial  0/11
+
+Fisher exact, two-sided, run level (pairs of levels, other factors pooled):
+  instr: s_all 6/16 vs s_during 0/16  p = 0.0177
+  instr: s_all 6/16 vs s_progress 0/16  p = 0.0177
+  instr: s_all 6/16 vs s_answer 11/16  p = 0.1556
+  instr: s_during 0/16 vs s_progress 0/16  p = 1.0000
+  instr: s_during 0/16 vs s_answer 11/16  p = 0.0001
+  instr: s_progress 0/16 vs s_answer 11/16  p = 0.0001
+
+per-run table: results/scope (raw/scope.tgz)/summary_runs.csv
+classifier audit sample: results/scope (raw/scope.tgz)/audit_sample.csv
