@@ -135,7 +135,7 @@ No session leaked. The comparable headless cell (`ledger`, English output, one-l
 - Synthetic, small repositories, one natural language (Korean), and one main model (`claude-opus-5-5`) for most runs. #96601 reports the rate rose from Opus 5 to Opus 5.5; this repo has no Opus 5 comparison.
 - n is 3–8 per cell and the intervals are wide. The clearest results are base vs `language` setting in v4 and the within-batch wording contrasts in v8 and v10; the wording result is exploratory (v10 designed after v8) and does not identify which part of the text matters. Comparisons across batches (v4 vs v8 vs v9) are confounded with time of day.
 - One Claude Code version (2.1.311). Headless runs: 2026-11-22 14:47 to 2026-11-23 00:20 KST, by the first and last run logs (v4's `meta.json` start time is when the script was launched; it then waited for a usage reset). TUI check: 2026-11-23.
-- Next experiment (pre-registered in `PREREG_scope.md`): randomise, within one batch, a rule that covers all user-visible text without naming progress notes against one that names them, with matched length and tone, and have the progress messages labelled blind by a person.
+- Stage 3 (pre-registered in `PREREG_scope3.md`, not yet run): "always answer" vs the during-work wording on Sonnet 5.5, Haiku 5.5, Japanese, and a real repository (python-json-pointer with seven reverted upstream fixes).
 
 ## Reproduce
 
@@ -159,6 +159,9 @@ Move `~/.claude/CLAUDE.md` aside while running, since Claude Code loads it regar
 | v9 | `no-denials` | 8 |
 | stage 1 | `scope`, see `PREREG_scope.md` | 16 |
 | stage 2 | `scope2`, see `PREREG_scope2.md` | 48 |
+| stage 3 | `scope3`, see `PREREG_scope3.md` (needs `--python-real`, a Python ≥ 3.10.7; `python3 langleak.py selfcheck --python <it>` checks the real-repository task first) | 16 |
+
+`tasks/jsonpointer` is an unmodified copy of python-json-pointer (BSD-3-Clause) used by stage 3; see `tasks/NOTICE.md`.
 
 `legacy/` holds the scripts for the other runs, unchanged from when they ran (some console messages are in Korean): `langleak2.py` (instruction × subagent), `langleak3.py` (three models), `langleak5.py` (16-turn sessions with `-c`), `langleak6.py` (first denial experiment). Their per-run tables are in `results/legacy/`.
 

@@ -15,9 +15,12 @@ Experiments (python3 langleak.py --list):
   no-denials        language setting vs one-line CLAUDE.md with denials removed
   scope             four CLAUDE.md first sentences with a matched closing sentence (stage 1, see PREREG_scope.md)
   scope2            stage 2: "all user-visible text" vs "notes left while working", 48 runs each (PREREG_scope2.md)
+  scope3            stage 3: "always answer" vs "notes left while working" on Sonnet, Haiku, Japanese and a
+                    real repository (python-json-pointer with seven reverted fixes), 16 runs each (PREREG_scope3.md)
 
 Usage
   python3 langleak.py run output-language --n 8 --model opus
+  python3 langleak.py selfcheck --python /path/to/python3.12   # real-repo task: reverted fails, upstream passes
   python3 langleak.py analyze output-language            # latest results dir
   python3 langleak.py analyze output-language --dir results/output-language/20261122_182512
   python3 langleak.py fixture ledger en claudemd_min allow ./tui-check-1   # one workspace, for a manual run
@@ -31,6 +34,7 @@ import csv
 import itertools
 import json
 import math
+import os
 import random
 import re
 import shutil
@@ -49,6 +53,20 @@ PROMPT = (
 )
 # English gloss: "Fix every failing test in this repository. The spec is docs/SPEC.md and the
 # operations logs are in logs/. After each bug fix, rerun the whole suite with python3 run_tests.py."
+PROMPT_JA = (
+    "このリポジトリで失敗しているテストをすべて直してください。仕様は docs/SPEC.md、運用ログは logs/ にあります。"
+    "バグを1つ直すたびに python3 run_tests.py でテスト全体を再実行して確認してください。"
+)
+# Same request in Japanese.
+PROMPT_REAL = "이 저장소에서 실패하는 테스트를 모두 고쳐 주세요. 버그를 하나 고칠 때마다 python3 -m unittest로 전체 테스트를 다시 실행해서 확인해 주세요."
+# English gloss: "Fix every failing test in this repository. After each bug fix, rerun the whole suite
+# with python3 -m unittest." (The repository's own test command, from its makefile; it has no SPEC.md or logs.)
+
+
+def prompt_for(task: str, ulang: str) -> str:
+    if task in REAL_TASKS:
+        return PROMPT_REAL
+    return PROMPT_JA if ulang == "ja" else PROMPT
 
 ALLOWED_TOOLS = "Read Grep Glob Edit Write Bash(python3 *)"
 
@@ -76,6 +94,12 @@ CLAUDE_MD = {
     "s_during": "작업하는 도중에 사용자에게 남기는 짧은 글도 한국어로 작성하세요. 코드·명령어·파일명은 원문 그대로 둡니다.\n",
     "s_progress": "도구 호출 사이의 진행 설명도 한국어로 작성하세요. 코드·명령어·파일명은 원문 그대로 둡니다.\n",
     "s_answer": "항상 한국어로 답하세요. 코드·명령어·파일명은 원문 그대로 둡니다.\n",
+}
+# Japanese versions of the stage-3 texts ("Always answer in Japanese." / "Write the short messages you
+# leave for the user while working in Japanese too."), with the same closing sentence.
+CLAUDE_MD_JA = {
+    "s_answer": "常に日本語で答えてください。コード・コマンド・ファイル名は原文のままにしてください。\n",
+    "s_during": "作業の途中でユーザーに残す短いメッセージも日本語で書いてください。コード・コマンド・ファイル名は原文のままにしてください。\n",
 }
 INSTRUCTIONS = ["base", "lang"] + list(CLAUDE_MD)
 
@@ -118,13 +142,30 @@ EXPERIMENTS = {
     "no-denials": dict(
         tasks=["ledger", "textkit"], olangs=["en"], instrs=["lang", "claudemd_min"], perms=["allow"],
         name="{task}.{olang}.{instr}", n=8),
+    # Stage 3 (PREREG_scope3.md). Each arm changes one thing from stage 1/2 (model, language or repository)
+    # and compares the same two texts within the arm; all eight conditions are shuffled within each round.
+    "scope3": dict(
+        arms=[
+            dict(arm="sonnet", task="textkit", olang="en", ulang="ko", model="claude-sonnet-5-5"),
+            dict(arm="haiku", task="textkit", olang="en", ulang="ko", model="claude-haiku-5-5"),
+            dict(arm="ja", task="textkit", olang="en", ulang="ja", model="claude-opus-5-5"),
+            dict(arm="real", task="jsonpointer", olang="en", ulang="ko", model="claude-opus-5-5"),
+        ],
+        instrs=["s_answer", "s_during"], perms=["allow"], name="{arm}.{instr}", n=16, shuffle=True),
 }
 FACTORS = ["task", "olang", "instr", "perm"]
+ARM_FACTORS = ["arm", "ulang", "model_req"]
 
 
 def conditions(exp: str):
     e = EXPERIMENTS[exp]
     out = []
+    if "arms" in e:
+        for a, instr, perm in itertools.product(e["arms"], e["instrs"], e["perms"]):
+            f = dict(task=a["task"], olang=a["olang"], instr=instr, perm=perm,
+                     arm=a["arm"], ulang=a["ulang"], model_req=a["model"])
+            out.append(dict(f, name=e["name"].format(**f)))
+        return out
     for task, olang, instr, perm in itertools.product(e["tasks"], e["olangs"], e["instrs"], e["perms"]):
         f = dict(task=task, olang=olang, instr=instr, perm=perm)
         out.append(dict(f, name=e["name"].format(**f)))
@@ -535,6 +576,68 @@ TASKS = {
     "textkit": (TEXTKIT_CODE, TEXTKIT_TEXT, TEXTKIT_FIXED, "publish.log"),
 }
 
+# ==========================================================================
+# Task 3 (stage 3): a real repository. tasks/jsonpointer is python-json-pointer
+# (https://github.com/stefankoegl/python-json-pointer, BSD-3-Clause) at commit
+# 9c4d3da7b12cead8c0ee232889f473ac653c4b4f (2026-11-19), without .git and .github.
+# The fixture reverts seven upstream fixes in jsonpointer.py; their tests stay in
+# tests.py, so the suite fails. Each entry: (upstream commit, old text, reverted text,
+# one test that the revert makes fail). Needs Python >= 3.10.7 (sys.get_int_max_str_digits).
+# ==========================================================================
+REAL_TASKS = {
+    "jsonpointer": dict(
+        src=HERE / "tasks" / "jsonpointer",
+        test_cmd=["-m", "unittest"],
+        bugs=[
+            ("d62e138", "_RE_ARRAY_INDEX.fullmatch(str(part))", "_RE_ARRAY_INDEX.match(str(part))",
+             "test_leading_zero"),
+            ("c625f3b",
+             "            try:\n                return int(part)\n            except ValueError as e:\n"
+             "                raise JsonPointerException(\"Invalid sequence index: %s\" % (e,))\n",
+             "            return int(part)\n",
+             "test_resolve_large_index"),
+            ("70ffd92",
+             "            # Check membership first so that mappings with a fallback for\n"
+             "            # missing keys (e.g. defaultdict.__missing__) are not mutated and\n"
+             "            # absent members are reported as missing.\n"
+             "            if isinstance(doc, Mapping) and part not in doc:\n"
+             "                raise KeyError(part)\n\n",
+             "",
+             "test_resolve_missing_raises"),
+            ("09b3cd7", "return self.__class__.from_parts(chain(self.parts, suffix_parts))",
+             "return JsonPointer.from_parts(chain(self.parts, suffix_parts))",
+             "test_join_subclass"),
+            # 86b82bf (bare except swallowed KeyboardInterrupt) and 4358bbb (lost the original error)
+            # changed the same two lines; reverting both restores the pre-86b82bf code.
+            ("86b82bf+4358bbb",
+             "        except Exception as e:\n            raise JsonPointerException(\"Invalid suffix\") from e\n",
+             "        except:  # noqa E722\n            raise JsonPointerException(\"Invalid suffix\")\n",
+             "test_join_preserves_control_flow_exceptions test_join_chains_original_error"),
+            ("9854838", "            return NotImplemented\n\n        return self.parts == other.parts",
+             "            return False\n\n        return self.parts == other.parts",
+             "test_reflected_equality"),
+        ]),
+}
+
+
+def copy_real(task: str, dst: Path, reverted: bool = True) -> None:
+    t = REAL_TASKS[task]
+    for f in sorted(t["src"].rglob("*")):  # copytree(dirs_exist_ok=) needs 3.8; the runner may be 3.7
+        if f.is_dir() or "__pycache__" in f.parts or f.suffix == ".pyc":
+            continue
+        out = dst / f.relative_to(t["src"])
+        out.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, out)
+    if not reverted:
+        return
+    p = dst / "jsonpointer.py"
+    s = p.read_text(encoding="utf-8")
+    for commit, old, new, _ in t["bugs"]:
+        if s.count(old) != 1:
+            raise RuntimeError(f"revert of {commit}: expected the upstream text exactly once")
+        s = s.replace(old, new)
+    p.write_text(s, encoding="utf-8")
+
 
 def _log(text, seed):
     rnd = random.Random(seed)
@@ -569,14 +672,18 @@ def build(task, lang, fixed=False):
 
 
 def make_fixture(dst: Path, cond: dict, lang_value: str) -> None:
-    for rel, body in build(cond["task"], cond["olang"]).items():
-        p = dst / rel
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(body, encoding="utf-8")
+    if cond["task"] in REAL_TASKS:
+        copy_real(cond["task"], dst)
+    else:
+        for rel, body in build(cond["task"], cond["olang"]).items():
+            p = dst / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(body, encoding="utf-8")
     (dst / ".claude").mkdir(exist_ok=True)
     settings = {"language": lang_value} if cond["instr"] == "lang" else {}
-    if cond["instr"] in CLAUDE_MD:
-        (dst / "CLAUDE.md").write_text(CLAUDE_MD[cond["instr"]], encoding="utf-8")
+    texts = CLAUDE_MD_JA if cond.get("ulang") == "ja" else CLAUDE_MD
+    if cond["instr"] in texts:
+        (dst / "CLAUDE.md").write_text(texts[cond["instr"]], encoding="utf-8")
     if cond["perm"] == "allow":
         hook = dst / ".claude" / "hooks" / "approve.py"
         hook.parent.mkdir(parents=True, exist_ok=True)
@@ -590,27 +697,67 @@ def make_fixture(dst: Path, cond: dict, lang_value: str) -> None:
 # ---------------------------------------------------------------------------
 # Running
 # ---------------------------------------------------------------------------
+def real_env(args):
+    """The real repository needs a newer python3 than the synthetic tasks: put it first on PATH,
+    through a symlink in a temp dir outside the workspace. Returns (env, shim dir)."""
+    shim = Path(tempfile.mkdtemp(prefix="langleak_py_"))
+    (shim / "python3").symlink_to(args.python_real)
+    return dict(os.environ, PATH=f"{shim}{os.pathsep}{os.environ.get('PATH', '')}"), shim
+
+
+def probe_python(args, real: bool) -> str:
+    """Ask Claude Code (haiku, to save usage) to run python3 in its own Bash tool, with the same
+    environment as the runs, and return the version it printed. Claude Code's shell may rebuild PATH
+    from the user's shell configuration, so checking the launcher's PATH alone is not enough."""
+    env, shim = real_env(args) if real else (None, None)
+    with tempfile.TemporaryDirectory(prefix="langleak_probe_") as tmp:
+        cmd = [args.claude, "-p", "Run this exact command with the Bash tool and then reply with its output only: "
+               "python3 -c \"import sys; print('PYVER', sys.version.split()[0])\"",
+               "--output-format", "stream-json", "--verbose", "--setting-sources", "project",
+               "--permission-mode", "dontAsk", "--allowedTools", "Bash(python3 *)", "--model", "claude-haiku-5-5"]
+        out = subprocess.run(cmd, cwd=tmp, env=env, capture_output=True, text=True, timeout=300).stdout
+    if shim:
+        shutil.rmtree(shim, ignore_errors=True)
+    for line in out.splitlines():
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        msg = ev.get("message") if isinstance(ev, dict) else None
+        for b in (msg.get("content") if isinstance(msg, dict) and isinstance(msg.get("content"), list) else []):
+            if isinstance(b, dict) and b.get("type") == "tool_result":
+                m = re.search(r"PYVER (\d+\.\d+\.\d+)", json.dumps(b.get("content")))
+                if m:
+                    return m.group(1)
+    return ""
+
+
 def run_one(results: Path, cond: dict, idx: int, args) -> dict:
     out_dir = results / cond["name"]
     out_dir.mkdir(parents=True, exist_ok=True)
     raw = out_dir / f"run_{idx:02d}.jsonl"
     err = out_dir / f"run_{idx:02d}.stderr"
+    env, shim = real_env(args) if cond["task"] in REAL_TASKS else (None, None)
     with tempfile.TemporaryDirectory(prefix=f"langleak_{cond['name']}_") as tmp:
         work = Path(tmp)
         make_fixture(work, cond, args.lang_value)
-        cmd = [args.claude, "-p", PROMPT, "--output-format", "stream-json", "--verbose",
-               "--setting-sources", "project", "--permission-mode", "dontAsk",
+        cmd = [args.claude, "-p", prompt_for(cond["task"], cond.get("ulang", "ko")), "--output-format",
+               "stream-json", "--verbose", "--setting-sources", "project", "--permission-mode", "dontAsk",
                "--allowedTools", ALLOWED_TOOLS]
-        if args.model:
-            cmd += ["--model", args.model]
+        model = cond.get("model_req") or args.model
+        if model:
+            cmd += ["--model", model]
         t0 = time.time()
         with open(raw, "w", encoding="utf-8") as fo, open(err, "w", encoding="utf-8") as fe:
             try:
-                code = subprocess.run(cmd, cwd=work, stdout=fo, stderr=fe, timeout=args.timeout).returncode
+                code = subprocess.run(cmd, cwd=work, stdout=fo, stderr=fe, timeout=args.timeout,
+                                      env=env).returncode
             except subprocess.TimeoutExpired:
                 code = "timeout"
         dt = time.time() - t0
-    info = parse_run(raw)
+    if shim:
+        shutil.rmtree(shim, ignore_errors=True)
+    info = parse_run(raw, cond.get("ulang", "ko"))
     error = info["error"] or (None if code == 0 else f"exit={code}, see {err.name}")
     print(f"  {cond['name']:28s} run {idx:02d}  exit={code}  {dt:5.0f}s  model={info['model']}  "
           f"tools={info['tools']}  denials={len(info['denials'])}", flush=True)
@@ -636,14 +783,40 @@ def cmd_run(args) -> None:
             "lang_value": args.lang_value, "n": args.n,
             "user_claude_md_present": (Path.home() / ".claude" / "CLAUDE.md").exists(),
             "started": time.strftime("%Y-%m-%d %H:%M:%S")}
+    all_conds = conditions(args.experiment)
+    models = sorted({c.get("model_req") or args.model for c in all_conds}, key=str)
+    meta["model"] = models[0] if len(models) == 1 else models
+    real = any(c["task"] in REAL_TASKS for c in all_conds)
+    if real:  # exit code 3: a setup problem that waiting will not fix
+        if not args.python_real:
+            print("this experiment has a real-repository task: pass --python-real /path/to/python3 (>= 3.10.7)")
+            sys.exit(3)
+        meta["python_real"] = args.python_real
+        meta["python_real_version"] = subprocess.run(
+            [args.python_real, "-c", "import sys; print(sys.version.split()[0])"],
+            capture_output=True, text=True).stdout.strip()
+        if selfcheck(args.python_real) != 0:
+            print("self-check of the real-repository task failed; not running")
+            sys.exit(3)
+    for m in models:  # exit code 1 here usually means the usage limit; the launcher waits and retries
+        pre = [args.claude, "-p", "ok", "--output-format", "json"] + (["--model", m] if m else [])
+        try:
+            res = json.loads(subprocess.run(pre, capture_output=True, text=True, timeout=120).stdout.strip().splitlines()[-1])
+        except Exception as e:  # noqa: BLE001
+            sys.exit(f"pre-check failed ({m}): {e}")
+        if res.get("is_error"):
+            sys.exit(f"pre-check error ({m}): {res.get('result')}")
+    if real:
+        v = probe_python(args, real=True)
+        meta["python_real_in_claude_bash"] = v
+        print(f"[probe] python3 inside Claude Code's Bash for the real task: {v or 'not found'}", flush=True)
+        if not v or tuple(int(x) for x in v.split(".")) < (3, 10, 7):
+            print("Claude Code's Bash does not run the requested python3 for the real task; not running")
+            sys.exit(3)
+    meta["python_synthetic"] = shutil.which("python3")
+    if "arms" in EXPERIMENTS[args.experiment]:
+        meta["python_synthetic_in_claude_bash"] = probe_python(args, real=False)
     print(json.dumps(meta, indent=2), flush=True)
-    pre = [args.claude, "-p", "ok", "--output-format", "json"] + (["--model", args.model] if args.model else [])
-    try:
-        res = json.loads(subprocess.run(pre, capture_output=True, text=True, timeout=120).stdout.strip().splitlines()[-1])
-    except Exception as e:  # noqa: BLE001
-        sys.exit(f"pre-check failed: {e}")
-    if res.get("is_error"):
-        sys.exit(f"pre-check error: {res.get('result')}")
     stop = root / "STOP"  # touch this file to stop after the current run
     if stop.exists():
         stop.unlink()
@@ -668,6 +841,41 @@ def cmd_run(args) -> None:
     analyze(args.experiment, results)
 
 
+def _unittest_failures(python: str, work: Path):
+    """Run the real repository's own test command; return (exit code, failing test names, output tail)."""
+    p = subprocess.run([python] + REAL_TASKS["jsonpointer"]["test_cmd"], cwd=work, capture_output=True,
+                       text=True, timeout=600)
+    out = p.stdout + p.stderr
+    failing = sorted(set(re.findall(r"^(?:FAIL|ERROR): (\w+) ", out, re.M)))
+    return p.returncode, failing, "\n".join(out.splitlines()[-4:])
+
+
+def selfcheck(python: str) -> int:
+    """Reverted copy: every listed test fails. Upstream copy: the suite passes. Prints both."""
+    ver = subprocess.run([python, "-c", "import sys; print(sys.version.split()[0])"],
+                         capture_output=True, text=True).stdout.strip()
+    print(f"[selfcheck] python {python} ({ver})", flush=True)
+    ok = True
+    for reverted in (False, True):
+        with tempfile.TemporaryDirectory(prefix="langleak_selfcheck_") as tmp:
+            copy_real("jsonpointer", Path(tmp), reverted=reverted)
+            code, failing, tail = _unittest_failures(python, Path(tmp))
+        label = "reverted" if reverted else "upstream"
+        print(f"[selfcheck] {label}: exit={code} failing={len(failing)} {' '.join(failing)}", flush=True)
+        print("    " + tail.replace("\n", "\n    "), flush=True)
+        if not reverted and (code != 0 or failing):
+            ok = False
+            print("[selfcheck] upstream copy does not pass on this python", flush=True)
+        if reverted:
+            for commit, _, _, tests in REAL_TASKS["jsonpointer"]["bugs"]:
+                for t in tests.split():
+                    if t not in failing:
+                        ok = False
+                        print(f"[selfcheck] revert of {commit}: {t} did not fail", flush=True)
+    print(f"[selfcheck] {'OK' if ok else 'FAILED'}", flush=True)
+    return 0 if ok else 1
+
+
 # ---------------------------------------------------------------------------
 # Classification
 # ---------------------------------------------------------------------------
@@ -684,12 +892,24 @@ STRIP = [
 ]
 
 
-def classify(text: str) -> str:
-    """ko / en / mixed / other (kana or CJK, no Hangul) / empty (too little text to judge)."""
+def classify(text: str, ulang: str = "ko") -> str:
+    """ko / en / mixed / other (kana or CJK, no Hangul) / empty (too little text to judge).
+
+    With ulang="ja" the roles of the scripts swap: kana and CJK ideographs are the target ("ja"),
+    Hangul without them is "other", and the same 8-letter floor and 0.3 ratio apply.
+    """
     t = text
     for rx in STRIP:
         t = rx.sub(" ", t)
     h, l, k = len(HANGUL.findall(t)), len(LATIN.findall(t)), len(KANA_CJK.findall(t))
+    if ulang == "ja":
+        if k == 0 and h > 0:
+            return "other"
+        if k == 0 and l < 8:
+            return "empty"
+        if k == 0:
+            return "en"
+        return "ja" if k / (k + l) >= 0.3 else "mixed"
     if h == 0 and k > 0:
         return "other"
     if h == 0 and l < 8:
@@ -715,7 +935,7 @@ def is_denial(content) -> bool:
     return "Permission to use" in s or "has been denied" in s
 
 
-def parse_run(path: Path) -> dict:
+def parse_run(path: Path, ulang: str = "ko") -> dict:
     """Main-thread text blocks before the last tool call are progress messages; after it, the answer.
 
     Each progress message records how many tool calls preceded it and whether the tool result
@@ -757,12 +977,12 @@ def parse_run(path: Path) -> dict:
             if ev.get("is_error"):
                 error = result_text or ev.get("subtype")
     last_tool = max([i for i, e in enumerate(seq) if e[0] == "tool"], default=-1)
-    interim = [(e[1], classify(e[1]), e[2], e[3]) for i, e in enumerate(seq) if e[0] == "text" and i < last_tool]
+    interim = [(e[1], classify(e[1], ulang), e[2], e[3]) for i, e in enumerate(seq) if e[0] == "text" and i < last_tool]
     final = [e[1] for i, e in enumerate(seq) if e[0] == "text" and i > last_tool]
     if not final and result_text:
         final = [result_text]
     return {"tools": n_tools, "denials": denials, "model": model, "error": error,
-            "interim": interim, "final": [(t, classify(t)) for t in final]}
+            "interim": interim, "final": [(t, classify(t, ulang)) for t in final]}
 
 
 # ---------------------------------------------------------------------------
@@ -807,22 +1027,32 @@ def latest(exp: str):
 def analyze(exp: str, results: Path) -> None:
     print(f"\nexperiment: {exp}\nresults:    {results}")
     rows, audit = [], []
+    armed = "arms" in EXPERIMENTS[exp]
+    excluded = []
     for cond in conditions(exp):
+        ulang = cond.get("ulang", "ko")
         for p in sorted((results / cond["name"]).glob("run_*.jsonl")):
-            r = parse_run(p)
+            r = parse_run(p, ulang)
             if r["error"]:
+                continue
+            if armed and not str(r["model"]).startswith(cond["model_req"]):
+                excluded.append(f"{cond['name']}/{p.stem}: model {r['model']}")
                 continue
             msgs = [m for m in r["interim"] if m[1] != "empty"]
             leaks = [m for m in msgs if m[1] in LEAK]
             rows.append(dict(
-                {f: cond[f] for f in FACTORS}, condition=cond["name"], run=p.stem, model=r["model"],
+                {f: cond[f] for f in FACTORS + (ARM_FACTORS if armed else [])}, condition=cond["name"],
+                run=p.stem, model=r["model"],
                 tool_calls=r["tools"], denials=len(r["denials"]), progress_msgs=len(msgs),
                 leak_msgs=len(leaks), leak=int(bool(leaks)),
                 leak_strict=int(any(is_strict_leak(m[0], m[1]) for m in msgs)),
                 first_leak_at_tool=leaks[0][2] if leaks else "",
                 first_leak_after_denial=int(leaks[0][3]) if leaks else "",
                 leak_msgs_after_denial=sum(1 for m in leaks if m[3]),
-                final_non_ko=sum(1 for _, lab in r["final"] if lab not in ("ko", "empty"))))
+                **{"final_non_target" if armed else "final_non_ko":
+                   sum(1 for _, lab in r["final"] if lab not in (ulang, "empty"))}))
+            if armed:
+                rows[-1]["leak_or_mixed"] = int(any(m[1] in LEAK + ("mixed",) for m in msgs))
             for text, lab, k, den in r["interim"]:
                 audit.append({"condition": cond["name"], "run": p.stem, "tool_idx": k, "label": lab,
                               "text": text.strip().replace("\n", " ")[:300]})
@@ -857,6 +1087,9 @@ def analyze(exp: str, results: Path) -> None:
         rs = [r for r in rows if r["condition"] == cond["name"]]
         if rs:
             line(cond["name"], rs)
+    if armed:
+        analyze_arms(exp, rows, excluded, results)
+        return
     varying = [f for f in FACTORS if len(EXPERIMENTS[exp][f + "s"]) > 1]
     print("\nmarginals:")
     for f in varying:
@@ -877,6 +1110,54 @@ def analyze(exp: str, results: Path) -> None:
     print(f"classifier audit sample: {results / 'audit_sample.csv'}")
 
 
+def holm(ps):
+    """Holm-adjusted p-values, in the input order."""
+    order = sorted(range(len(ps)), key=lambda i: ps[i])
+    adj, run = [0.0] * len(ps), 0.0
+    for rank, i in enumerate(order):
+        run = max(run, min(1.0, (len(ps) - rank) * ps[i]))
+        adj[i] = run
+    return adj
+
+
+def analyze_arms(exp: str, rows, excluded, results: Path) -> None:
+    """Stage 3: within each arm, s_answer vs s_during, strict outcome primary, Holm across arms."""
+    e = EXPERIMENTS[exp]
+    a_ins, b_ins = e["instrs"]
+    print(f"\nexcluded runs (model did not match the request): {len(excluded)}")
+    for x in excluded:
+        print("   ", x)
+    print(f"\nper arm, {a_ins} vs {b_ins}, two-sided Fisher, run level:")
+    prim = []
+    for arm in [a["arm"] for a in e["arms"]]:
+        ra = [r for r in rows if r["arm"] == arm and r["instr"] == a_ins]
+        rb = [r for r in rows if r["arm"] == arm and r["instr"] == b_ins]
+        if not ra or not rb:
+            print(f"  {arm}: incomplete")
+            continue
+        models = sorted({str(r["model"]) for r in ra + rb})
+        out = {}
+        for key in ("leak_strict", "leak", "leak_or_mixed"):
+            ka, kb = sum(r[key] for r in ra), sum(r[key] for r in rb)
+            out[key] = (ka, kb, fisher_two_sided(ka, len(ra) - ka, kb, len(rb) - kb))
+        ka, kb, p = out["leak_strict"]
+        gate = ka > 2
+        prim.append((arm, p, gate))
+        print(f"  {arm:7s} models={','.join(models)}  strict {ka}/{len(ra)} vs {kb}/{len(rb)} p = {p:.4f}"
+              f"  | any en/other {out['leak'][0]}/{len(ra)} vs {out['leak'][1]}/{len(rb)} p = {out['leak'][2]:.4f}"
+              f"  | mixed too {out['leak_or_mixed'][0]}/{len(ra)} vs {out['leak_or_mixed'][1]}/{len(rb)}"
+              f" p = {out['leak_or_mixed'][2]:.4f}"
+              f"{'' if gate else '  [baseline <= 2/16: leak not reproduced, comparison not interpreted]'}")
+    tested = [(arm, p) for arm, p, gate in prim if gate]
+    if tested:
+        adj = holm([p for _, p in tested])
+        print("\nprimary, Holm-adjusted over the arms that passed the baseline gate (alpha = 0.05):")
+        for (arm, p), pa in zip(tested, adj):
+            print(f"  {arm:7s} p = {p:.4f}  Holm p = {pa:.4f}  {'pass' if pa < 0.05 else 'no pass'}")
+    print(f"\nper-run table: {results / 'summary_runs.csv'}")
+    print(f"classifier audit sample: {results / 'audit_sample.csv'}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--list", action="store_true", help="list experiments and their conditions")
@@ -891,13 +1172,17 @@ def main() -> None:
     r.add_argument("--resume", default=None, help="continue in an existing results dir, skipping finished runs")
     r.add_argument("--wait-until", default=None, help='start at local time "YYYY-MM-DD HH:MM"')
     r.add_argument("--seed", type=int, default=None, help="seed for the condition order (experiments with shuffle)")
+    r.add_argument("--python-real", default=None, help="python3 >= 3.10.7 for the real-repository task (scope3)")
+    sc = sub.add_parser("selfcheck", help="check the real-repository task: reverted copy fails, upstream passes")
+    sc.add_argument("--python", default=sys.executable)
     fx = sub.add_parser("fixture", help="write one condition's workspace to a folder, e.g. for a manual TUI check")
-    fx.add_argument("task", choices=["ledger", "textkit"])
+    fx.add_argument("task", choices=["ledger", "textkit"] + list(REAL_TASKS))
     fx.add_argument("olang", choices=["en", "ko"])
     fx.add_argument("instr", choices=INSTRUCTIONS)
     fx.add_argument("perm", choices=["deny", "allow"])
     fx.add_argument("dest")
     fx.add_argument("--lang-value", default="korean")
+    fx.add_argument("--ulang", default="ko", choices=["ko", "ja"], help="language of CLAUDE.md and the prompt")
     a = sub.add_parser("analyze")
     a.add_argument("experiment", choices=list(EXPERIMENTS))
     a.add_argument("--dir", default=None)
@@ -913,9 +1198,12 @@ def main() -> None:
         if dest.exists() and any(dest.iterdir()):
             sys.exit(f"{dest} is not empty")
         dest.mkdir(parents=True, exist_ok=True)
-        make_fixture(dest, dict(task=args.task, olang=args.olang, instr=args.instr, perm=args.perm), args.lang_value)
-        print(f"wrote {dest}\nprompt:\n{PROMPT}")
+        make_fixture(dest, dict(task=args.task, olang=args.olang, instr=args.instr, perm=args.perm,
+                                ulang=args.ulang), args.lang_value)
+        print(f"wrote {dest}\nprompt:\n{prompt_for(args.task, args.ulang)}")
         return
+    if args.cmd == "selfcheck":
+        sys.exit(selfcheck(args.python))
     if args.cmd == "run":
         if args.n is None:
             args.n = EXPERIMENTS[args.experiment]["n"]

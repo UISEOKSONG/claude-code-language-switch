@@ -1,0 +1,107 @@
+Tutorial
+========
+
+Please refer to `RFC 6901 <https://datatracker.ietf.org/doc/html/rfc6901>`_ for the exact
+pointer syntax. The ``resolve_pointer``
+function is basically a deep ``get``.
+
+.. code-block:: python
+
+    >>> from jsonpointer import resolve_pointer
+    >>> obj = {"foo": {"anArray": [ {"prop": 44}], "another prop": {"baz": "A string" }}}
+
+    >>> resolve_pointer(obj, '') == obj
+    True
+
+    >>> resolve_pointer(obj, '/foo') == obj['foo']
+    True
+
+    >>> resolve_pointer(obj, '/foo/another prop') == obj['foo']['another prop']
+    True
+
+    >>> resolve_pointer(obj, '/foo/another prop/baz') == obj['foo']['another prop']['baz']
+    True
+
+    >>> resolve_pointer(obj, '/foo/anArray/0') == obj['foo']['anArray'][0]
+    True
+
+    >>> resolve_pointer(obj, '/some/path', None) == None
+    True
+
+
+The ``set_pointer`` function allows modifying a portion of an object using
+JSON pointer notation:
+
+.. code-block:: python
+
+    >>> from jsonpointer import set_pointer
+    >>> obj = {"foo": {"anArray": [ {"prop": 44}], "another prop": {"baz": "A string" }}}
+
+    >>> set_pointer(obj, '/foo/anArray/0/prop', 55)
+    {'foo': {'anArray': [{'prop': 55}], 'another prop': {'baz': 'A string'}}}
+
+    >>> obj
+    {'foo': {'anArray': [{'prop': 55}], 'another prop': {'baz': 'A string'}}}
+
+By default ``set_pointer`` modifies the original object.  Pass ``inplace=False``
+to create a copy and modify the copy instead:
+
+    >>> from jsonpointer import set_pointer
+    >>> obj = {"foo": {"anArray": [ {"prop": 44}], "another prop": {"baz": "A string" }}}
+
+    >>> set_pointer(obj, '/foo/anArray/0/prop', 55, inplace=False)
+    {'foo': {'anArray': [{'prop': 55}], 'another prop': {'baz': 'A string'}}}
+
+    >>> obj
+    {'foo': {'anArray': [{'prop': 44}], 'another prop': {'baz': 'A string'}}}
+
+By default, setting a value below a member that does not exist raises a
+``JsonPointerException``. Pass ``create=True`` to create missing members as
+dicts instead. Missing list elements can be created by referencing the end of
+the list, either with ``-`` or with an index equal to the length of the list:
+
+    >>> from jsonpointer import set_pointer
+    >>> obj = {}
+
+    >>> set_pointer(obj, '/cat/name', 'whiskers', create=True)
+    {'cat': {'name': 'whiskers'}}
+
+    >>> obj = {'cats': []}
+
+    >>> set_pointer(obj, '/cats/-/name', 'whiskers', create=True)
+    {'cats': [{'name': 'whiskers'}]}
+
+The ``JsonPointer`` class wraps a (string) path and can be used to access the
+same path on several objects.
+
+.. code-block:: python
+
+    >>> import jsonpointer
+
+    >>> pointer = jsonpointer.JsonPointer('/foo/1')
+
+    >>> obj1 = {'foo': ['a', 'b', 'c']}
+    >>> pointer.resolve(obj1)
+    'b'
+
+    >>> obj2 = {'foo': {'0': 1, '1': 10, '2': 100}}
+    >>> pointer.resolve(obj2)
+    10
+
+Checking pointer prefixes
+-------------------------
+
+``child.contains(parent)`` checks whether the parent's parts are a prefix of
+the child's parts. The equivalent membership expression is ``parent in child``.
+The comparison is between whole path parts, so ``/foo/b`` is not a prefix of
+``/foo/bar``. Equal pointers and the root pointer are prefixes too:
+
+    >>> from jsonpointer import JsonPointer
+    >>> parent = JsonPointer('/foo')
+    >>> child = JsonPointer('/foo/bar')
+    >>> child.contains(parent)
+    True
+    >>> parent in child
+    True
+    >>> child in parent
+    False
