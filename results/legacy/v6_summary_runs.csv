@@ -1,0 +1,17 @@
+condition,run,model,tool_calls,interim_msgs,interim_en,interim_other,leak,first_en_at_tool,denials,first_denial_at_tool,leak_right_after_denial,final_non_ko
+deny.base,run_01,claude-opus-5-5,27,3,2,0,1,2,1,2,1,0
+deny.base,run_02,claude-opus-5-5,28,8,0,0,0,,1,2,0,0
+deny.base,run_03,claude-opus-5-5,28,9,1,0,1,2,1,2,1,0
+deny.base,run_04,claude-opus-5-5,28,9,1,0,1,2,1,2,1,0
+deny.lang,run_01,claude-opus-5-5,28,9,1,0,1,2,1,2,1,0
+deny.lang,run_02,claude-opus-5-5,28,9,1,0,1,2,1,2,1,0
+deny.lang,run_03,claude-opus-5-5,28,8,0,0,0,,1,2,0,0
+deny.lang,run_04,claude-opus-5-5,29,4,1,0,1,2,1,2,1,0
+allow.base,run_01,claude-opus-5-5,28,8,1,0,1,2,1,2,1,0
+allow.base,run_02,claude-opus-5-5,28,9,9,0,1,2,1,2,1,0
+allow.base,run_03,claude-opus-5-5,28,7,0,0,0,,1,2,0,0
+allow.base,run_04,claude-opus-5-5,28,5,2,0,1,2,1,2,1,0
+allow.lang,run_01,claude-opus-5-5,28,3,1,0,1,2,1,2,1,0
+allow.lang,run_02,claude-opus-5-5,28,9,0,0,0,,1,2,0,0
+allow.lang,run_03,claude-opus-5-5,27,9,1,0,1,2,1,2,1,0
+allow.lang,run_04,claude-opus-5-5,28,9,1,0,1,2,1,2,1,0

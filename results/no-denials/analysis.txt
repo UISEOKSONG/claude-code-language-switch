@@ -1,0 +1,22 @@
+
+experiment: no-denials
+results:    results/no-denials
+
+per condition:
+  ledger.en.lang               leak runs  1/8  ( 12%, CI   2%- 47%)  non-Korean msgs   1/58   runs w/ denial  1  leaks starting after denial  0/1
+  ledger.en.claudemd_min       leak runs  1/8  ( 12%, CI   2%- 47%)  non-Korean msgs   1/55   runs w/ denial  0  leaks starting after denial  0/1
+  textkit.en.lang              leak runs  3/8  ( 38%, CI  14%- 69%)  non-Korean msgs  10/21   runs w/ denial  0  leaks starting after denial  0/3
+  textkit.en.claudemd_min      leak runs  6/8  ( 75%, CI  41%- 93%)  non-Korean msgs   9/20   runs w/ denial  0  leaks starting after denial  0/6
+
+marginals:
+  task=ledger                  leak runs  2/16 ( 12%, CI   3%- 36%)  non-Korean msgs   2/113  runs w/ denial  1  leaks starting after denial  0/2
+  task=textkit                 leak runs  9/16 ( 56%, CI  33%- 77%)  non-Korean msgs  19/41   runs w/ denial  0  leaks starting after denial  0/9
+  instr=lang                   leak runs  4/16 ( 25%, CI  10%- 49%)  non-Korean msgs  11/79   runs w/ denial  1  leaks starting after denial  0/4
+  instr=claudemd_min           leak runs  7/16 ( 44%, CI  23%- 67%)  non-Korean msgs  10/75   runs w/ denial  0  leaks starting after denial  0/7
+
+Fisher exact, two-sided, run level (pairs of levels, other factors pooled):
+  task: ledger 2/16 vs textkit 9/16  p = 0.0233
+  instr: lang 4/16 vs claudemd_min 7/16  p = 0.4578
+
+per-run table: results/no-denials/summary_runs.csv
+classifier audit sample: results/no-denials/audit_sample.csv

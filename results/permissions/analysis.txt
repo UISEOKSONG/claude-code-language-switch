@@ -1,0 +1,27 @@
+
+experiment: permissions
+results:    results/permissions
+
+per condition:
+  deny.base                    leak runs  2/4  ( 50%, CI  15%- 85%)  non-Korean msgs   5/29   runs w/ denial  4  leaks starting after denial  1/2
+  allow.base                   leak runs  1/4  ( 25%, CI   5%- 70%)  non-Korean msgs   9/32   runs w/ denial  1  leaks starting after denial  0/1
+  deny.lang                    leak runs  1/4  ( 25%, CI   5%- 70%)  non-Korean msgs   1/28   runs w/ denial  4  leaks starting after denial  1/1
+  allow.lang                   leak runs  0/4  (  0%, CI   0%- 49%)  non-Korean msgs   0/31   runs w/ denial  0  leaks starting after denial  0/0
+  deny.claudemd                leak runs  0/4  (  0%, CI   0%- 49%)  non-Korean msgs   0/43   runs w/ denial  3  leaks starting after denial  0/0
+  allow.claudemd               leak runs  0/4  (  0%, CI   0%- 49%)  non-Korean msgs   0/41   runs w/ denial  0  leaks starting after denial  0/0
+
+marginals:
+  instr=base                   leak runs  3/8  ( 38%, CI  14%- 69%)  non-Korean msgs  14/61   runs w/ denial  5  leaks starting after denial  1/3
+  instr=lang                   leak runs  1/8  ( 12%, CI   2%- 47%)  non-Korean msgs   1/59   runs w/ denial  4  leaks starting after denial  1/1
+  instr=claudemd               leak runs  0/8  (  0%, CI   0%- 32%)  non-Korean msgs   0/84   runs w/ denial  3  leaks starting after denial  0/0
+  perm=deny                    leak runs  3/12 ( 25%, CI   9%- 53%)  non-Korean msgs   6/100  runs w/ denial 11  leaks starting after denial  2/3
+  perm=allow                   leak runs  1/12 (  8%, CI   1%- 35%)  non-Korean msgs   9/104  runs w/ denial  1  leaks starting after denial  0/1
+
+Fisher exact, two-sided, run level (pairs of levels, other factors pooled):
+  instr: base 3/8 vs lang 1/8  p = 0.5692
+  instr: base 3/8 vs claudemd 0/8  p = 0.2000
+  instr: lang 1/8 vs claudemd 0/8  p = 1.0000
+  perm: deny 3/12 vs allow 1/12  p = 0.5901
+
+per-run table: results/permissions/summary_runs.csv
+classifier audit sample: results/permissions/audit_sample.csv

@@ -1,0 +1,6 @@
+# new runs write here; published data lives in raw/ and results/<experiment>/*.csv
+results/*/2*/
+results/*/STOP
+__pycache__/
+*.pyc
+.DS_Store

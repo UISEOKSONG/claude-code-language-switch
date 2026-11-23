@@ -1,0 +1,146 @@
+id,text,reviewed_label,classifier_label
+1,**8. report — 단수형 처리 (SPEC §8)**,ko,ko
+2,8) Report singular:,en,en
+3,Read 도구로 파일을 읽겠습니다.,ko,ko
+4,I'll use the Read tool instead.,en,en
+5,Fix 8: plurals (§8).,en,en
+6,CSV는 표준 `csv` 모듈로 따옴표를 처리합니다.,ko,ko
+7,4) Invoice quantity:,en,en
+8,첫 번째 버그(money)부터 고치겠습니다.,ko,ko
+9,"Dates: Sunday should move 1 day to Monday, not 2.",en,en
+10,Bug 2: tax — 내림(floor) 대신 반올림(half up).,mixed,mixed
+11,"Now fixing one at a time, re-running tests after each.",en,en
+12,"**3. truncate** (명세 3번: ""...""을 포함한 결과가 limit 이하)",ko,ko
+13,Money fix confirmed (8 → 10 passing). Next: tax.,en,en
+14,"Fix 2: tax (반올림 half up, Decimal 사용).",mixed,mixed
+15,Fix 1: money — parse with `Decimal` to avoid float error.,en,en
+16,"Dates 통과(15/18). 다음은 currency(나누기 → 곱하기, half-up)입니다.",ko,ko
+17,"버그 8개를 하나씩 고치고, 고칠 때마다 전체 테스트를 다시 돌리겠습니다. 먼저 금액 변환부터 고칩니다(명세 1절, 로그의 '19.99'→1998).",ko,ko
+18,"명세는 ""letters and digits""이므로 ASCII에 한정하지 않도록 유니코드 문자도 보존하게 다듬겠습니다.",ko,ko
+19,Now fixing each module per the spec.,en,en
+20,8. 복수형:,ko,ko
+21,Bug 1: money (float error). Use Decimal.,en,en
+22,"**6. 슬러그 (SPEC §1)**: 글자·숫자가 아닌 문자의 연속을 하이픈 하나로 바꾸고, 양 끝의 하이픈을 제거합니다.",ko,ko
+23,"Money fixed (10/18). Next, Tax: `floor` → half-up rounding.",en,en
+24,**7. 회문** (명세 7절: 대소문자·공백·문장부호 무시),ko,ko
+25,Fix 4 — Invoice (§4): multiply by quantity.,en,en
+26,"Slug, 단어 수, 자르기, 제목, 시간 길이, HTML 버그를 고쳤습니다. 이제 회문과 복수형만 남았습니다.",ko,ko
+27,환전: 나누기 대신 곱하기로 고칩니다.,ko,ko
+28,Discount 경계값을 포함(inclusive)으로 수정합니다.,ko,ko
+29,"Now fixing one bug at a time, re-running the full suite after each.  **1. Money** — float conversion leaks error; use `Decimal`.",en,en
+30,3) Discount boundaries:,en,en
+31,Bash 권한이 거부되어 테스트를 직접 실행할 수는 없습니다. 우선 테스트 파일을 읽어서 기대값을 확인하겠습니다.,ko,ko
+32,마지막으로 운영 요약의 단수형입니다.,ko,ko
+33,5) Duration — 분(m)이 3600으로 곱해지던 오류:,ko,ko
+34,"5) Due date (§5, Sunday → next Monday is +1 day):",en,en
+35,진행 상황: 8개 중 6개 수정 완료(14/16 통과). 이제 회문을 고치고 다음으로 복수형을 고치겠습니다.,ko,ko
+36,Discount 통과(13/18). 다음은 invoice의 quantity 누락입니다.,ko,mixed
+37,첫 번째 버그(money)부터 고치고 테스트를 실행해 보겠습니다.,ko,ko
+38,"**8. plural** (명세 8번: s, x, z, ch, sh로 끝나면 ""es"")",ko,ko
+39,**2. 시간 길이** (5절): 분을 3600으로 곱하고 있었습니다.,ko,ko
+40,버그 원인이 모두 파악됐습니다. 하나씩 고치고 매번 전체 테스트를 실행하겠습니다.  **1. money — float 오차 (SPEC §1)**,ko,ko
+41,I'll use the Read tool instead.,en,en
+42,Slug 버그부터 고치겠습니다.,ko,ko
+43,"Currency: 나누기 대신 곱하고, tax와 같은 방식으로 half-up 반올림합니다.",ko,ko
+44,"Now fixing one at a time and re-running tests after each. First, money (spec §1: exact conversion, no float).",en,en
+45,명세(SPEC 1번)에 따라 슬러그부터 고치겠습니다.,ko,ko
+46,"Fix 5 — Due dates (§5): Sunday should move 1 day (to Monday), not 2.",en,en
+47,CSV: 표준 `csv` 모듈로 따옴표 필드를 처리합니다.,ko,ko
+48,Discount: boundaries must be inclusive.,en,en
+49,6) HTML — 속성이 있는 태그도 제거:,ko,ko
+50,"Currency: 나누기가 아니라 곱하기여야 하고, 반올림도 Decimal로 정확히 처리합니다.",ko,ko
+51,"**8. 자르기 (SPEC §3)**: `""...""`까지 포함한 결과가 제한 길이를 넘으면 안 됩니다.",ko,ko
+52,Let me use Read instead.,en,en
+53,지급 기한: 일요일은 하루만 미뤄야 월요일이 됩니다.,ko,ko
+54,**7. csv — 따옴표로 감싼 필드 처리 (SPEC §7)**,ko,ko
+55,10 → 8 실패. 다음은 세금 반올림입니다.,ko,ko
+56,Bash로 파일을 읽는 명령은 거부되어 Read 도구로 대신 읽었습니다. 이제 버그를 하나씩 고치고 매번 테스트를 실행하겠습니다.  **1. slug** (SPEC 1),ko,ko
+57,**2. 단어 수**,ko,ko
+58,수정 후 테스트를 실행해 보겠습니다.,ko,ko
+59,**5. dates — 일요일은 +1일 (SPEC §5)**,ko,ko
+60,"**5. 시간 길이** (명세 5절: ""m""은 분)",ko,ko
+61,Fixed 6 so far (14/16 passing). Next: palindrome and plural.,en,en
+62,"Bug 8 — report (spec §8): singular ""invoice"" when the count is 1.",en,en
+63,"진행 상황: 8개 중 6개 수정 완료, 이제 제목 표기(title)를 고칩니다.",ko,ko
+64,Last one: plural (§8).,en,en
+65,환전: 나누기를 곱하기로 바꿉니다(명세 6절).,ko,ko
+66,"명세의 ""letters and digits""는 ASCII 외 문자도 포함할 수 있으므로 유니코드를 고려한 형태로 다듬겠습니다.",ko,ko
+67,Fix 1: slug (SPEC §1).,en,en
+68,Bug 1: money — Decimal을 사용합니다.,mixed,mixed
+69,I'll use the Read tool instead.,en,en
+70,Bash에서 `cat`은 막혀 있어서 Read로 확인했습니다. 실패 원인 8개가 모두 파악됐습니다. 하나씩 고치면서 매번 테스트를 실행하겠습니다.  **1. 슬러그**,ko,ko
+71,"지금까지 버그 6개를 고쳤고 남은 2개(회문, 복수형)를 이어서 고치는 중입니다.",ko,ko
+72,Due date: 일요일은 하루만 더해 월요일로 옮깁니다.,ko,ko
+73,"8개 중 6개를 고쳤고, 지금은 palindrome과 plural을 수정하고 있습니다.",ko,ko
+74,"**8. 자르기** (3절): `""...""`까지 포함해서 제한 길이를 넘으면 안 됩니다.",ko,ko
+75,7. 회문 (대소문자·공백·구두점 무시):,ko,ko
+76,Fix 1: money (Decimal로 정확히 파싱).,mixed,mixed
+77,"진행 중: 8개 중 6개 수정 완료(14/16 통과). 남은 palindrome, plural 고치겠습니다.",ko,ko
+78,다음은 할인 경계값(이상 = `>=`)입니다.,ko,ko
+79,**7. 회문**,ko,ko
+80,Money 수정 완료(10/18). 다음은 tax — float 대신 Decimal로 half-up 반올림합니다.,ko,ko
+81,"**6. currency** — 나누기가 아니라 곱하기, 반올림은 half up",ko,ko
+82,Bug 8: report — 단수형 처리.,mixed,ko
+83,Fix 1 — Money (SPEC §1): parse exactly with `Decimal` instead of float.,en,en
+84,마지막으로 운영 요약의 단수형을 처리합니다.,ko,ko
+85,I'll use the Read tool instead.,en,en
+86,**2. tax: 내림 → 반올림(0.5 올림) (명세 2절)**,ko,ko
+87,"6) Currency (§6, multiply by rate, not divide):",en,en
+88,**8. 복수형**,ko,ko
+89,**7. Palindrome** (SPEC 7: 대소문자·공백·문장부호 무시),ko,ko
+90,Spec 5에 따르면 일요일은 하루만 더해야 다음 월요일이 됩니다.,ko,ko
+91,"Dates: Sunday should move +1 day to Monday, not +2.",en,en
+92,"Currency (§6: multiply, not divide).",en,en
+93,Fix 2: word count (§2).,en,en
+94,CSV 통과(17/18). 마지막으로 report의 단수형입니다.,ko,ko
+95,버그 8개가 확인됐습니다. 하나씩 고치고 매번 전체 테스트를 실행하겠습니다. 먼저 slug부터 고칩니다.,ko,ko
+96,Bug 3: discount — 경계값 포함(`>=`).,mixed,ko
+97,할인 경계값(3절):,ko,ko
+98,money 통과(10/18). 다음은 tax의 half-up 반올림입니다.,ko,ko
+99,Fix 7: CSV 따옴표 처리 (표준 `csv` 모듈 사용).,mixed,ko
+100,마지막 남은 복수형 버그를 고치는 중입니다.,ko,ko
+101,Due date (§5: Sunday → next Monday is +1 day).,en,en
+102,"먼저 슬러그부터 고치고, 고칠 때마다 전체 테스트를 다시 돌리겠습니다.",ko,ko
+103,Spec과 테스트 기대값에 맞춰 8개 모듈을 수정합니다.,ko,ko
+104,CSV: 표준 `csv` 모듈로 따옴표를 처리합니다(기존의 공백 제거 동작은 유지).,ko,ko
+105,**4. Invoice** — quantity was ignored.,en,en
+106,"Now fixing one bug at a time, running the full suite after each. 1) Money:",en,en
+107,Read 도구로 파일을 확인하겠습니다.,ko,ko
+108,Read 도구로 파일을 확인하겠습니다.,ko,ko
+109,"Fix 6: currency — multiply by the rate (not divide), round half up.",en,en
+110,Read 도구로 파일을 확인하겠습니다.,ko,ko
+111,**7. palindrome**,en,en
+112,"**4. 회문** (7절): 대소문자, 공백, 문장부호를 무시하도록 바꿉니다.",ko,ko
+113,첫 번째 버그(금액 변환)부터 고칩니다. `float` 변환으로 인한 오차를 없애기 위해 `Decimal`을 사용합니다.,ko,ko
+114,"진행 상황: 8개 중 6개 버그를 고쳤고, 이제 회문과 복수형을 고치는 중입니다.",ko,ko
+115,인보이스 합계에 수량을 반영합니다.,ko,ko
+116,회문과 복수형 두 개가 남았습니다. 이어서 고치겠습니다.,ko,ko
+117,I'll use the Read tool instead.,en,en
+118,**3. discount: 경계값 미포함 (명세 3절)**,ko,ko
+119,Bug 5: dates — 일요일은 1일만 더해 월요일로.,mixed,ko
+120,CSV (§7: quoted fields may contain commas).,en,en
+121,I'll use Read instead.,en,en
+122,"Fixing one bug at a time, re-running tests after each. Starting with slug.",en,en
+123,2. 단어 수:,ko,ko
+124,Money fixed (10 passed). Fix 2: tax — half-up rounding with Decimal.,en,en
+125,Fix 3 — Discount (§3): inclusive boundaries.,en,en
+126,"**5. Dates** — Sunday should move forward 1 day (to Monday), not 2.",en,en
+127,**2. 시간 파싱 (SPEC §5)**: 분이 3600으로 곱해지고 있었습니다.,ko,ko
+128,**2. Tax** — `floor` truncates; spec says round half up. Use `Decimal` to avoid float drift.,en,en
+129,Fix 7: palindrome (§7).,en,en
+130,CSV: 표준 라이브러리 `csv` 모듈로 따옴표 필드를 처리합니다.,ko,ko
+131,할인 경계값(이상 포함)을 고칩니다.,ko,ko
+132,Money 버그부터 고치겠습니다 (부동소수점 대신 `Decimal` 사용).,ko,ko
+133,Money 통과(10/18). 다음은 Tax입니다.,ko,ko
+134,Dates: 일요일은 하루만 더해 월요일로 이동해야 합니다.,ko,ko
+135,"Money 테스트 2개 통과. 다음은 세금(2절, 0.5 올림)입니다.",ko,ko
+136,인보이스 합계에 수량을 반영합니다.,ko,ko
+137,"HTML 수정까지 끝났고(14/16 통과), 이제 palindrome과 plural을 고치고 있습니다.",ko,ko
+138,"2) Tax (§2, half-up rounding):",en,en
+139,마지막으로 운영 요약의 단수형입니다(명세 8절).,ko,ko
+140,Read 도구로 파일을 읽겠습니다.,ko,ko
+141,지급 기한: 일요일이면 하루만 미뤄 월요일이 되게 합니다(명세 5절).,ko,ko
+142,"진행 상황: 8개 중 6개 버그를 고쳤고(14/16 통과), 이제 회문과 복수형을 고치는 중입니다.",ko,ko
+143,"Money 2건 통과. 다음은 세금 반올림(명세 2절, 0.5 올림)입니다.",ko,ko
+144,6. HTML 태그 제거 (속성 있는 태그 포함):,ko,ko
+145,Fix 4: invoice — multiply by quantity.,en,en

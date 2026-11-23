@@ -1,0 +1,29 @@
+
+experiment: output-language
+results:    results/output-language
+
+per condition:
+  ledger.en.base               leak runs  5/8  ( 62%, CI  31%- 86%)  non-Korean msgs  44/65   runs w/ denial  8  leaks starting after denial  3/5
+  ledger.en.lang               leak runs  4/8  ( 50%, CI  22%- 78%)  non-Korean msgs   4/55   runs w/ denial  8  leaks starting after denial  4/4
+  ledger.ko.base               leak runs  7/8  ( 88%, CI  53%- 98%)  non-Korean msgs  35/45   runs w/ denial  8  leaks starting after denial  3/7
+  ledger.ko.lang               leak runs  2/8  ( 25%, CI   7%- 59%)  non-Korean msgs   4/59   runs w/ denial  8  leaks starting after denial  2/2
+  textkit.en.base              leak runs  4/8  ( 50%, CI  22%- 78%)  non-Korean msgs  18/38   runs w/ denial  8  leaks starting after denial  0/4
+  textkit.en.lang              leak runs  1/8  ( 12%, CI   2%- 47%)  non-Korean msgs   1/36   runs w/ denial  8  leaks starting after denial  1/1
+  textkit.ko.base              leak runs  4/8  ( 50%, CI  22%- 78%)  non-Korean msgs  12/28   runs w/ denial  8  leaks starting after denial  1/4
+  textkit.ko.lang              leak runs  1/8  ( 12%, CI   2%- 47%)  non-Korean msgs   3/29   runs w/ denial  8  leaks starting after denial  0/1
+
+marginals:
+  task=ledger                  leak runs 18/32 ( 56%, CI  39%- 72%)  non-Korean msgs  87/224  runs w/ denial 32  leaks starting after denial 12/18
+  task=textkit                 leak runs 10/32 ( 31%, CI  18%- 49%)  non-Korean msgs  34/131  runs w/ denial 32  leaks starting after denial  2/10
+  olang=en                     leak runs 14/32 ( 44%, CI  28%- 61%)  non-Korean msgs  67/194  runs w/ denial 32  leaks starting after denial  8/14
+  olang=ko                     leak runs 14/32 ( 44%, CI  28%- 61%)  non-Korean msgs  54/161  runs w/ denial 32  leaks starting after denial  6/14
+  instr=base                   leak runs 20/32 ( 62%, CI  45%- 77%)  non-Korean msgs 109/176  runs w/ denial 32  leaks starting after denial  7/20
+  instr=lang                   leak runs  8/32 ( 25%, CI  13%- 42%)  non-Korean msgs  12/179  runs w/ denial 32  leaks starting after denial  7/8
+
+Fisher exact, two-sided, run level (pairs of levels, other factors pooled):
+  task: ledger 18/32 vs textkit 10/32  p = 0.0769
+  olang: en 14/32 vs ko 14/32  p = 1.0000
+  instr: base 20/32 vs lang 8/32  p = 0.0051
+
+per-run table: results/output-language/summary_runs.csv
+classifier audit sample: results/output-language/audit_sample.csv
