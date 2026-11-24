@@ -1,0 +1,18 @@
+
+experiment: scope4
+results:    scope4
+
+per condition:
+  real.s_answer                leak runs 17/24 ( 71%, CI  51%- 85%)  strict 17/24  non-Korean msgs  17/118  runs w/ denial  0  leaks starting after denial  0/17
+  real.sys_answer              leak runs 16/24 ( 67%, CI  47%- 82%)  strict 16/24  non-Korean msgs  16/131  runs w/ denial  0  leaks starting after denial  0/16
+
+excluded runs (model did not match the request): 0
+
+per arm, s_answer vs sys_answer, two-sided Fisher, run level:
+  real    models=claude-opus-5-5  strict 17/24 vs 16/24 p = 1.0000  | any en/other 17/24 vs 16/24 p = 1.0000  | mixed too 17/24 vs 16/24 p = 1.0000
+
+primary, Holm-adjusted over the arms that passed the baseline gate (alpha = 0.05):
+  real    p = 1.0000  Holm p = 1.0000  no pass
+
+per-run table: scope4/summary_runs.csv
+classifier audit sample: scope4/audit_sample.csv

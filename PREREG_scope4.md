@@ -35,3 +35,20 @@ With 24 runs per condition and A at 60% (stage 3: 10/16), the test has about 95%
 ## Running
 
 `python3 langleak.py run scope4 --n 24 --seed <s> --python-real <python ≥ 3.10.7> --resume results/scope4/<dir>`, started by `LangLeakScope4.app` on the same Mac as stages 1–3.
+
+---
+
+## Results (added 2026-11-24, after all 48 runs)
+
+Run on 2026-11-24, 21:09–22:10 KST, on the same Mac as stages 1–3, Claude Code 2.1.311, seed 20261126. All 48 runs finished without an error and with the requested model; no run hit a permission denial. The self-check passed (Python 3.11.16, upstream 101 tests OK, reverted 14 failing) and Claude Code's Bash ran Python 3.11.16. Files: `results/scope4/`, raw logs in `raw/scope4.tgz`.
+
+| condition | strict leak runs | non-Korean progress messages |
+|---|---|---|
+| A, CLAUDE.md "항상 한국어로 답하세요." | 17/24 (71%, 51–85%) | 17/118 |
+| B, same sentence via `--append-system-prompt` | 16/24 (67%, 47–82%) | 16/131 |
+
+Two-sided Fisher p = 1.00. The gate passed (A 17/24). The secondary outcomes are identical (17/24 vs 16/24 with any `en`/`other`, and with `mixed` counted). No final answer was in another language; every run had at least one progress message (mean 5.2).
+
+Every leak was exactly one message, the first progress message of the run, and in 32 of 33 it was a variant of "(Now) let me look at the relevant/failing tests." (the other: "First bug: `__eq__` returns `False` instead of `NotImplemented`, …"). The rest of each run was Korean.
+
+**Reading, against the plan:** no evidence that the system-prompt channel helps on this repository; the two channels gave practically the same rate. Together with stage 3, none of the user-side texts tried here (two CLAUDE.md wordings, and the system-prompt append) stopped the opening English line on the real repository, which appeared in about two thirds of runs in this batch (stage 3: 10/16 and 8/16). Not covered: other wordings in the system prompt, other repositories, models or languages, the interactive UI.
