@@ -260,9 +260,13 @@ def run_tui(claude, flags, prompt, work: Path, env, raw_path: Path, log):
                 last = now
                 fresh = (fresh + ANSI.sub(b"", data))[-6000:]
             low = re.sub(rb"\s", b"", fresh.lower())  # the UI moves the cursor instead of printing spaces
-            if not sent_at and (b"entertoconfirm" in low or b"trustthisfolder" in low or b"trustthefiles" in low) \
-                    and now - last > 2 and now - last_enter > 3:
-                log("start-up dialog, pressing Enter (default choice)")
+            if not sent_at and b"entertoconfirm" in low and now - last > 2 and now - last_enter > 3:
+                if b"trustthisfolder" in low:  # folder-trust dialog: the default is "No, exit"
+                    log("folder-trust dialog, choosing 'Yes, I trust this folder'")
+                    os.write(fd, b"\x1b[B")
+                    time.sleep(0.5)
+                else:
+                    log("start-up dialog, pressing Enter (default choice)")
                 os.write(fd, b"\r")
                 last_enter, fresh = now, b""
                 continue
@@ -289,6 +293,8 @@ def run_tui(claude, flags, prompt, work: Path, env, raw_path: Path, log):
             if now - t0 > TIMEOUT:
                 note = "timeout"
                 break
+    if not sent_at and note == "ok":
+        note = "exited before the prompt"
     _stop(pid)
     os.close(fd)
     return note
