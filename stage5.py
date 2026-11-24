@@ -255,7 +255,8 @@ def run_tui(claude, flags, prompt, work: Path, env, raw_path: Path, log):
                     break
                 if not data:
                     break
-                raw.write(data)
+                if raw.tell() < 2_000_000:  # keep the first 2 MB of the terminal stream only
+                    raw.write(data)
                 last = now
                 fresh = (fresh + ANSI.sub(b"", data))[-6000:]
             low = re.sub(rb"\s", b"", fresh.lower())  # the UI moves the cursor instead of printing spaces
@@ -499,6 +500,8 @@ def cmd_run(args):
                 continue
             if version(args.claude) != meta["claude_version"]:
                 print("Claude Code version changed during the batch; stopping"); sys.exit(3)
+            if shutil.disk_usage(results).free < 1_000_000_000:
+                print("less than 1 GB of free disk space; stopping"); sys.exit(3)
             st = run_one(results, cond, i, args)
             errors_in_row = errors_in_row + 1 if st["error"] else 0
             if errors_in_row >= 3:
