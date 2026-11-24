@@ -1,0 +1,183 @@
+{
+ "boltons": [
+  {
+   "commit": "73838fc",
+   "subject": "ioutils: return '' from SpooledStringIO.readline(0) (#607)",
+   "hunks": [
+    {
+     "file": "boltons/ioutils.py",
+     "after": "\n    def readline(self, length=None):\n        self._checkClosed()\n        if length == 0:\n            # codecs.StreamReader.readline treats size=0 as \"no limit\"\n            return ''\n        ret = self.buffer.readline(length).decode('utf-8')\n        self._tell = self.tell() + len(ret)\n        return ret\n",
+     "before": "\n    def readline(self, length=None):\n        self._checkClosed()\n        ret = self.buffer.readline(length).decode('utf-8')\n        self._tell = self.tell() + len(ret)\n        return ret\n"
+    }
+   ]
+  },
+  {
+   "commit": "8a49b74",
+   "subject": "dictutils: keep every value when extending an OMD with itself (#605)",
+   "hunks": [
+    {
+     "file": "boltons/dictutils.py",
+     "after": "        instead of overwriting them.\n        \"\"\"\n        if E is self:\n            iterator = iter(E.items(multi=True))\n        elif isinstance(E, OrderedMultiDict):\n            iterator = E.iteritems(multi=True)\n        elif hasattr(E, 'keys'):\n",
+     "before": "        instead of overwriting them.\n        \"\"\"\n        if E is self:\n            iterator = iter(E.items())\n        elif isinstance(E, OrderedMultiDict):\n            iterator = E.iteritems(multi=True)\n        elif hasattr(E, 'keys'):\n"
+    },
+    {
+     "file": "boltons/urlutils.py",
+     "after": "        instead of overwriting them.\n        \"\"\"\n        if E is self:\n            iterator = iter(E.items(multi=True))\n        elif isinstance(E, OrderedMultiDict):\n            iterator = E.iteritems(multi=True)\n        elif hasattr(E, 'keys'):\n",
+     "before": "        instead of overwriting them.\n        \"\"\"\n        if E is self:\n            iterator = iter(E.items())\n        elif isinstance(E, OrderedMultiDict):\n            iterator = E.iteritems(multi=True)\n        elif hasattr(E, 'keys'):\n"
+    }
+   ]
+  },
+  {
+   "commit": "2ecf547",
+   "subject": "excutils: render causes wrapped outside an exception handler (#562)",
+   "hunks": [
+    {
+     "file": "boltons/excutils.py",
+     "after": "    def _get_trace_str(self):\n        if not self.cause:\n            return super().__repr__()\n        if getattr(self, 'full_trace', None):\n            return ''.join(traceback.format_list(self.full_trace))\n        return ''\n\n",
+     "before": "    def _get_trace_str(self):\n        if not self.cause:\n            return super().__repr__()\n        if self.full_trace:\n            return ''.join(traceback.format_list(self.full_trace))\n        return ''\n\n"
+    }
+   ]
+  },
+  {
+   "commit": "59bd0fb",
+   "subject": "mathutils: reject negative Bits lengths and clamp right shifts (#604, #495)",
+   "hunks": [
+    {
+     "file": "boltons/mathutils.py",
+     "after": "            raise ValueError('Bits cannot represent negative values')\n        if len_ is None:\n            len_ = len(f'{val:b}')\n        if len_ < 0:\n            raise ValueError(f'Bits length must be non-negative, not {len_!r}')\n        if val >= 2 ** len_:\n            raise ValueError(f'value {val} cannot be represented with {len_} bits')\n        self.val = val  # data is stored internally as integer\n",
+     "before": "            raise ValueError('Bits cannot represent negative values')\n        if len_ is None:\n            len_ = len(f'{val:b}')\n        if val >= 2 ** len_:\n            raise ValueError(f'value {val} cannot be represented with {len_} bits')\n        self.val = val  # data is stored internally as integer\n"
+    },
+    {
+     "file": "boltons/mathutils.py",
+     "after": "        return Bits(self.val << other, self.len + other)\n\n    def __rshift__(self, other):\n        return Bits(self.val >> other, max(0, self.len - other))\n\n    def __hash__(self):\n        return hash(self.val)\n",
+     "before": "        return Bits(self.val << other, self.len + other)\n\n    def __rshift__(self, other):\n        return Bits(self.val >> other, self.len - other)\n\n    def __hash__(self):\n        return hash(self.val)\n"
+    }
+   ]
+  },
+  {
+   "commit": "435774e",
+   "subject": "strutils: make empty MultiReplace mapping a no-op",
+   "hunks": [
+    {
+     "file": "boltons/strutils.py",
+     "after": "        Given an input string, run all substitutions given in the\n        constructor.\n        \"\"\"\n        if not self.group_map:\n            return text\n        return self.combined_pattern.sub(self._get_value, text)\n\n\n",
+     "before": "        Given an input string, run all substitutions given in the\n        constructor.\n        \"\"\"\n        return self.combined_pattern.sub(self._get_value, text)\n\n\n"
+    }
+   ]
+  },
+  {
+   "commit": "1e61524",
+   "subject": "fix(strutils): stop singularize() mangling words ending in 'ss'",
+   "hunks": [
+    {
+     "file": "boltons/strutils.py",
+     "after": "        singular = word[:-3] + 'y'\n    elif word.endswith('es') and word[-3] == 's':\n        singular = word[:-2]\n    elif word.endswith('ss'):\n        # Words ending in a double 's' (glass, boss, kiss) are already\n        # singular; their plurals end in 'sses' and are handled above. Do\n        # not blindly strip the trailing 's', which would produce 'glas',\n        # 'bos', 'kis' and break idempotency (singularize('Glasses') ==\n        # 'Glass', but 'Glass' must stay 'Glass').\n        return orig_word\n    else:\n        singular = word[:-1]\n    return _match_case(orig_word, singular)\n",
+     "before": "        singular = word[:-3] + 'y'\n    elif word.endswith('es') and word[-3] == 's':\n        singular = word[:-2]\n    else:\n        singular = word[:-1]\n    return _match_case(orig_word, singular)\n"
+    }
+   ]
+  }
+ ],
+ "more-itertools": [
+  {
+   "commit": "fbd5513",
+   "subject": "fix: validate the chunk size in chunked_even",
+   "hunks": [
+    {
+     "file": "more_itertools/more.py",
+     "after": "    [[1, 2, 3], [4, 5, 6], [7]]\n\n    \"\"\"\n    if n < 0:\n        raise ValueError('n must be at least 0')\n    if n == 0:\n        return\n\n    iterator = iter(iterable)\n\n    # Initialize a buffer to process the chunks while keeping\n",
+     "before": "    [[1, 2, 3], [4, 5, 6], [7]]\n\n    \"\"\"\n    iterator = iter(iterable)\n\n    # Initialize a buffer to process the chunks while keeping\n"
+    }
+   ]
+  },
+  {
+   "commit": "67fcf64",
+   "subject": "fix: honour a falsey validator in bucket (#1308)",
+   "hunks": [
+    {
+     "file": "more_itertools/more.py",
+     "after": "        self._it = iter(iterable)\n        self._key = key\n        self._cache = defaultdict(deque)\n        # Use ``is None`` rather than truthiness: a valid validator may be a\n        # callable object that is falsey (e.g. an empty ``set`` subclass with\n        # ``__call__``), and ``validator or ...`` would silently replace it.\n        self._validator = (lambda x: True) if validator is None else validator\n\n    def __contains__(self, value):\n        if not self._validator(value):\n",
+     "before": "        self._it = iter(iterable)\n        self._key = key\n        self._cache = defaultdict(deque)\n        self._validator = validator or (lambda x: True)\n\n    def __contains__(self, value):\n        if not self._validator(value):\n"
+    }
+   ]
+  },
+  {
+   "commit": "7847d43",
+   "subject": "Don't mask TypeError raised while iterating in value_chain",
+   "hunks": [
+    {
+     "file": "more_itertools/more.py",
+     "after": "            yield value\n            continue\n        try:\n            it = iter(value)\n        except TypeError:\n            yield value\n        else:\n            yield from it\n\n\ndef product_index(element, *iterables, repeat=1):\n",
+     "before": "            yield value\n            continue\n        try:\n            yield from value\n        except TypeError:\n            yield value\n\n\ndef product_index(element, *iterables, repeat=1):\n"
+    }
+   ]
+  },
+  {
+   "commit": "0e6acdf",
+   "subject": "Raise a clear ValueError for negative n in chunked()",
+   "hunks": [
+    {
+     "file": "more_itertools/more.py",
+     "after": "    list is yielded.\n\n    \"\"\"\n    if n is not None and n < 0:\n        raise ValueError('n must be at least 0')\n\n    iterator = iter(partial(take, n, iter(iterable)), [])\n    if strict:\n        if n is None:\n",
+     "before": "    list is yielded.\n\n    \"\"\"\n    iterator = iter(partial(take, n, iter(iterable)), [])\n    if strict:\n        if n is None:\n"
+    }
+   ]
+  },
+  {
+   "commit": "958990e",
+   "subject": "Raise for negative slice sizes in sliced()",
+   "hunks": [
+    {
+     "file": "more_itertools/more.py",
+     "after": "    For non-sliceable iterables, see :func:`chunked`.\n\n    \"\"\"\n    if n < 0:\n        raise ValueError('n must be at least 0')\n\n    iterator = takewhile(len, (seq[i : i + n] for i in count(0, n)))\n    if strict:\n\n",
+     "before": "    For non-sliceable iterables, see :func:`chunked`.\n\n    \"\"\"\n    iterator = takewhile(len, (seq[i : i + n] for i in count(0, n)))\n    if strict:\n\n"
+    }
+   ]
+  },
+  {
+   "commit": "f51a53b",
+   "subject": "fix: handle empty interleave_evenly input",
+   "hunks": [
+    {
+     "file": "more_itertools/more.py",
+     "after": "\n    dims = len(lengths)\n\n    if not dims:\n        return\n\n    # sort iterables by length, descending\n    lengths_permute = sorted(\n        range(dims), key=lambda i: lengths[i], reverse=True\n",
+     "before": "\n    dims = len(lengths)\n\n    # sort iterables by length, descending\n    lengths_permute = sorted(\n        range(dims), key=lambda i: lengths[i], reverse=True\n"
+    }
+   ]
+  }
+ ],
+ "toolz": [
+  {
+   "commit": "d2eba03",
+   "subject": "Fix interpose([]) raising StopIteration (#635)",
+   "hunks": [
+    {
+     "file": "toolz/itertoolz.py",
+     "after": "\n    >>> list(interpose(\"a\", [1, 2, 3]))\n    [1, 'a', 2, 'a', 3]\n    >>> list(interpose(\"a\", []))\n    []\n    \"\"\"\n    inposed = concat(zip(itertools.repeat(el), seq))\n    try:\n        next(inposed)\n    except StopIteration:\n        return iter([])\n    return inposed\n\n\n",
+     "before": "\n    >>> list(interpose(\"a\", [1, 2, 3]))\n    [1, 'a', 2, 'a', 3]\n    \"\"\"\n    inposed = concat(zip(itertools.repeat(el), seq))\n    next(inposed)\n    return inposed\n\n\n"
+    }
+   ]
+  },
+  {
+   "commit": "5a7e078",
+   "subject": "Raise in partition_all when length is invalid (#603)",
+   "hunks": [
+    {
+     "file": "toolz/itertoolz.py",
+     "after": "        try:\n            # If seq defines __len__, then\n            # we can quickly calculate where no_pad starts\n            end = len(seq) % n\n            if prev[end - 1] is no_pad or prev[end] is not no_pad:\n                raise LookupError(\n                    'The sequence passed to `parition_all` has invalid length'\n                )\n            yield prev[:end]\n        except TypeError:\n            # Get first index of no_pad without using .index()\n            # https://github.com/pytoolz/toolz/issues/387\n",
+     "before": "        try:\n            # If seq defines __len__, then\n            # we can quickly calculate where no_pad starts\n            yield prev[:len(seq) % n]\n        except TypeError:\n            # Get first index of no_pad without using .index()\n            # https://github.com/pytoolz/toolz/issues/387\n"
+    }
+   ]
+  },
+  {
+   "commit": "e36b5ea",
+   "subject": "getter works in empty index case",
+   "hunks": [
+    {
+     "file": "toolz/itertoolz.py",
+     "after": "        if len(index) == 1:\n            index = index[0]\n            return lambda x: (x[index],)\n        elif index:\n            return operator.itemgetter(*index)\n        else:\n            return lambda x: ()\n    else:\n        return operator.itemgetter(index)\n\n",
+     "before": "        if len(index) == 1:\n            index = index[0]\n            return lambda x: (x[index],)\n        else:\n            return operator.itemgetter(*index)\n    else:\n        return operator.itemgetter(index)\n\n"
+    }
+   ]
+  }
+ ]
+}

@@ -176,6 +176,7 @@ Move `~/.claude/CLAUDE.md` aside while running, since Claude Code loads it regar
 | stage 2 | `scope2`, see `PREREG_scope2.md` | 48 |
 | stage 3 | `scope3`, see `PREREG_scope3.md` (needs `--python-real`, a Python ≥ 3.10.7; `python3 langleak.py selfcheck --python <it>` checks the real-repository task first) | 16 |
 | stage 4 | `scope4`, see `PREREG_scope4.md` (real repository only; CLAUDE.md vs `--append-system-prompt`) | 24 |
+| stage 5 | `stage5.py run`, see `PREREG_scope5.md` (models × languages × 4 real repositories × headless/TUI; needs a Python ≥ 3.11 with pytest) | 4 |
 
 `tasks/jsonpointer` is an unmodified copy of python-json-pointer (BSD-3-Clause) used by stage 3; see `tasks/NOTICE.md`.
 
