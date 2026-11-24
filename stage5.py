@@ -162,7 +162,7 @@ def selfcheck(python) -> int:
         commits = list(dict.fromkeys(c for c, *_ in REVERTS[repo]))
         res = {}
         for label, only, reverted in [("upstream", None, False), ("all", None, True)] + [(c, c, True) for c in commits]:
-            with tempfile.TemporaryDirectory(prefix="langleak5_check_") as tmp:
+            with tempfile.TemporaryDirectory(prefix="langleak5_check_", ignore_cleanup_errors=True) as tmp:
                 copy_repo(repo, Path(tmp), only=only, reverted=reverted)
                 code, failing, tail = run_suite(python, repo, Path(tmp))
             res[label] = dict(exit=code, failing=failing)

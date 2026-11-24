@@ -53,3 +53,9 @@ One task type (fixing failing tests) with one prompt per language; four small Py
 ## Running
 
 `LangLeakScope5.app` on the same Mac as stages 1–4 runs `stage5.py run --claude <claude> --python <venv python> --seed 20261125 --n 4 --resume results/scope5/run_stage5` and retries every 5 minutes after an error stop (usage limit), skipping finished runs. Afterwards: `stage5.py analyze --dir results/scope5/run_stage5`.
+
+---
+
+## Amendment before any run (2026-11-25, 03:50 KST)
+
+The first self-check on the Mac stopped the batch before any run, as planned: toolz's upstream suite failed one test, `toolz/tests/test_package.py::test_has_version`, which reads the version from the installed package metadata and so fails in a source checkout that was never `pip install`ed (every reverted copy failed it too). That file is removed from `tasks/toolz`; nothing else changes. All other self-check results passed: jsonpointer, boltons and more-itertools upstream suites passed, every single revert in them failed at least one test, and the three toolz reverts each failed their own test (`test_interpose_empty`, `test_partition_all`, `test_getter`). The self-check also now ignores errors while deleting its temporary folders. No stage-5 run had started.
