@@ -15,6 +15,8 @@ Experiments (python3 langleak.py --list):
   no-denials        language setting vs one-line CLAUDE.md with denials removed
   scope             four CLAUDE.md first sentences with a matched closing sentence (stage 1, see PREREG_scope.md)
   scope2            stage 2: "all user-visible text" vs "notes left while working", 48 runs each (PREREG_scope2.md)
+  scope4            stage 4: real repository, "always answer" in CLAUDE.md vs in --append-system-prompt,
+                    24 runs each (PREREG_scope4.md)
   scope3            stage 3: "always answer" vs "notes left while working" on Sonnet, Haiku, Japanese and a
                     real repository (python-json-pointer with seven reverted fixes), 16 runs each (PREREG_scope3.md)
 
@@ -101,7 +103,11 @@ CLAUDE_MD_JA = {
     "s_answer": "常に日本語で答えてください。コード・コマンド・ファイル名は原文のままにしてください。\n",
     "s_during": "作業の途中でユーザーに残す短いメッセージも日本語で書いてください。コード・コマンド・ファイル名は原文のままにしてください。\n",
 }
-INSTRUCTIONS = ["base", "lang"] + list(CLAUDE_MD)
+# Stage 4: the same sentence as s_answer, given with --append-system-prompt instead of a CLAUDE.md.
+SYSTEM_PROMPTS = {
+    "sys_answer": CLAUDE_MD["s_answer"].strip(),
+}
+INSTRUCTIONS = ["base", "lang"] + list(CLAUDE_MD) + list(SYSTEM_PROMPTS)
 
 # PreToolUse hook used by the "allow" arm: approves shell commands that stay in the
 # workspace and change nothing outside it, so the run sees no permission denials.
@@ -152,6 +158,11 @@ EXPERIMENTS = {
             dict(arm="real", task="jsonpointer", olang="en", ulang="ko", model="claude-opus-5-5"),
         ],
         instrs=["s_answer", "s_during"], perms=["allow"], name="{arm}.{instr}", n=16, shuffle=True),
+    # Stage 4 (PREREG_scope4.md): the real-repository arm of stage 3, "always answer in Korean" in a
+    # CLAUDE.md vs the same sentence appended to the system prompt.
+    "scope4": dict(
+        arms=[dict(arm="real", task="jsonpointer", olang="en", ulang="ko", model="claude-opus-5-5")],
+        instrs=["s_answer", "sys_answer"], perms=["allow"], name="{arm}.{instr}", n=24, shuffle=True),
 }
 FACTORS = ["task", "olang", "instr", "perm"]
 ARM_FACTORS = ["arm", "ulang", "model_req"]
@@ -747,6 +758,8 @@ def run_one(results: Path, cond: dict, idx: int, args) -> dict:
         model = cond.get("model_req") or args.model
         if model:
             cmd += ["--model", model]
+        if cond["instr"] in SYSTEM_PROMPTS:
+            cmd += ["--append-system-prompt", SYSTEM_PROMPTS[cond["instr"]]]
         t0 = time.time()
         with open(raw, "w", encoding="utf-8") as fo, open(err, "w", encoding="utf-8") as fe:
             try:
@@ -1157,7 +1170,7 @@ def analyze_arms(exp: str, rows, excluded, results: Path) -> None:
               f"  | any en/other {out['leak'][0]}/{len(ra)} vs {out['leak'][1]}/{len(rb)} p = {out['leak'][2]:.4f}"
               f"  | mixed too {out['leak_or_mixed'][0]}/{len(ra)} vs {out['leak_or_mixed'][1]}/{len(rb)}"
               f" p = {out['leak_or_mixed'][2]:.4f}"
-              f"{'' if gate else '  [baseline <= 2/16: leak not reproduced, comparison not interpreted]'}")
+              f"{'' if gate else f'  [baseline <= 2/{len(ra)}: leak not reproduced, comparison not interpreted]'}")
     tested = [(arm, p) for arm, p, gate in prim if gate]
     if tested:
         adj = holm([p for _, p in tested])
