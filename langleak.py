@@ -890,6 +890,16 @@ STRIP = [
     re.compile(r"\b[\w-]+\.(py|md|log|txt|json|csv|sh|js|ts|yml|yaml)\b"),  # file names
     re.compile(r"\b\w+\(\)"),  # calls like foo()
 ]
+# Japanese has no spaces between words, so the patterns above can swallow a whole Japanese clause
+# around a slash ("は修正済み（9/16）。次は" is one \S+ run). For ulang="ja" the same patterns are
+# restricted to ASCII. This is a post-hoc fix to the pre-registered classifier (PREREG_scope3.md,
+# "Deviation"); the Korean rules are unchanged.
+PREREG_JA_CLASSIFIER = os.environ.get("LANGLEAK_PREREG_JA") == "1"  # 1: reproduce the pre-registered numbers
+STRIP_JA = STRIP[:3] + [
+    re.compile(r"[!-~]*[/\\_=][!-~]*"),
+    re.compile(r"\b[A-Za-z0-9_-]+\.(py|md|log|txt|json|csv|sh|js|ts|yml|yaml)\b"),
+    re.compile(r"\b[A-Za-z0-9_]+\(\)"),
+]
 
 
 def classify(text: str, ulang: str = "ko") -> str:
@@ -899,7 +909,7 @@ def classify(text: str, ulang: str = "ko") -> str:
     Hangul without them is "other", and the same 8-letter floor and 0.3 ratio apply.
     """
     t = text
-    for rx in STRIP:
+    for rx in (STRIP_JA if ulang == "ja" and not PREREG_JA_CLASSIFIER else STRIP):
         t = rx.sub(" ", t)
     h, l, k = len(HANGUL.findall(t)), len(LATIN.findall(t)), len(KANA_CJK.findall(t))
     if ulang == "ja":

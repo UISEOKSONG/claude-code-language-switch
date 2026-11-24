@@ -53,3 +53,41 @@ With 16 runs per condition and B at 5%, Fisher's test at α = 0.05 has about 91%
 ## Running
 
 `python3 langleak.py run scope3 --n 16 --seed <s> --python-real <python ≥ 3.10.7> --resume results/scope3/<dir>` (the `--model` option is ignored for this experiment; each arm sets its own). If the usage limit stops a batch, the same command resumes it after the limit resets and skips finished runs.
+
+---
+
+## Results (added 2026-11-24, after all 128 runs)
+
+Run on 2026-11-24, 09:05–10:59 KST, on the same Mac as stages 1–2, Claude Code 2.1.311, seed 20261125. All 128 runs finished without an error; no run was excluded for its model. Before the batch the self-check passed on Python 3.11.16 (upstream: 101 tests OK; reverted: all seven listed tests failed, 14 tests in all), and Claude Code's Bash ran Python 3.11.16 for the real arm and 3.15.2 for the synthetic arms. Files: `results/scope3/`, raw logs in `raw/scope3.tgz`.
+
+### Deviation: the Japanese classifier
+
+Reading the leak-labelled messages before writing this up showed that the pre-registered classifier mislabelled Japanese. Its path/identifier pattern (`\S*[/\\_=]\S*`) assumes spaces between words; Japanese has none, so in a message like `slug 修正済み（9/16）。次は word count。` it deleted the whole Japanese clause around the slash and left only `slug word count`, which then counted as English. Across the 202 progress messages of the `ja` arm, 27 labels changed when the same patterns were limited to ASCII (`STRIP_JA` in `langleak.py`): 8 from `en` to `ja` or `mixed`, the rest from `mixed` or `empty` to `ja`. All 8 false `en` labels were in `ja.s_during` (runs 09 and 15), so the fix moves that cell from 4/16 to 2/16 and nothing else on the primary outcome. Both versions are reported; the corrected one is the one this write-up reads from. `LANGLEAK_PREREG_JA=1 python3 langleak.py analyze scope3 --dir …` reproduces the pre-registered numbers (`analysis_prereg_classifier.txt`). The Korean rules are unchanged, and all earlier analyses reproduce byte for byte.
+
+### Numbers
+
+Strict outcome (primary), runs with at least one English (or other-script) progress message that is not a heading-only line:
+
+| arm | A "always answer" | B "notes left while working" | Fisher p | Holm p | gate |
+|---|---|---|---|---|---|
+| `sonnet` (Sonnet 5.5, Korean, synthetic) | 4/16 | 1/16 | 0.33 | 1.00 | passed |
+| `haiku` (Haiku 5.5, Korean, synthetic) | 1/16 | 4/16 | 0.33 | – | **failed** (A ≤ 2/16) |
+| `ja` (Opus 5.5, Japanese, synthetic), corrected | 5/16 | 2/16 | 0.39 | 1.00 | passed |
+| `ja`, pre-registered classifier | 5/16 | 4/16 | 1.00 | 1.00 | passed |
+| `real` (Opus 5.5, Korean, python-json-pointer) | 10/16 | 8/16 | 0.72 | 1.00 | passed |
+
+Holm p values are over the three arms that passed the gate; they are the same, to two decimals, with either `ja` classifier. The secondary outcomes (any `en`/`other` message, and `mixed` counted too) give the same picture: `sonnet` 4/16 vs 1/16, `haiku` 1/16 vs 4/16, `ja` 5/16 vs 2/16 (7/16 vs 4/16 with `mixed`), `real` 10/16 vs 8/16. No final answer was in another language. Every run had at least one progress message (means 3.2–8.8 per run).
+
+### What the leaks looked like
+
+- `real`: all 18 leaking runs leaked with one line, a variant of "(Now) let me look at the relevant/failing tests.", in 17 of them as the first progress message, and the rest of the run in Korean. The wording made no visible difference to this line.
+- `ja`: all 7 strict leaks started at the first progress message ("Let me check the tests quickly, then fix one at a time." and similar). One `ja.s_answer` run also had English heading lines ("2. word count").
+- `sonnet`: mostly short label-like lines ("Fix 1: word count.", "Next: duration."), which count under the strict rule because of the trailing period or the "Next:" form, plus two full sentences (one in each condition). One A run had six such lines.
+- `haiku`: different from the Opus arms. The three leaking runs with several progress messages were mostly or entirely English (8 of 8, 7 of 8 and 8 of 8 messages, full sentences such as "Slug is fixed (9 passing now). Next, word count (spec §2): …"); the other two leaking runs had a single progress message, in English.
+
+### Reading, against the plan
+
+- (a) The leak reproduced in three of four arms: Sonnet 5.5 (4/16 under A), Opus 5.5 in Japanese (5/16) and Opus 5.5 on the real repository (10/16). For Haiku 5.5 it did not reach the gate under A (1/16), but it appeared in 4/16 runs under B, so Haiku does produce it; with one cell under the gate the arm is not interpreted.
+- (b) No arm passed. Sonnet and Japanese point the same way as stages 1–2 (fewer leaks with the during-work text) with differences that 16 runs per condition cannot separate from chance; on the real repository the during-work text left English in 8 of 16 runs against 10 of 16. So the stage-2 result (13/48 vs 3/48 on the synthetic task) did not carry over to the real repository at this size, and the data give no support for that text as a general fix.
+- What held across settings is the shape of the leak on Opus 5.5: one English sentence at the start of the tool loop announcing the next step, followed by the requested language. This matches the residual leaks in stage 2.
+- Limits: one prompt per arm, 16 runs per condition, one real repository (seven reverted fixes in one Python library), headless runs only.

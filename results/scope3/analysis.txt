@@ -1,0 +1,29 @@
+
+experiment: scope3
+results:    scope3
+
+per condition:
+  sonnet.s_answer              leak runs  4/16 ( 25%, CI  10%- 49%)  strict  4/16  non-Korean msgs   9/52   runs w/ denial 14  leaks starting after denial  0/4
+  sonnet.s_during              leak runs  1/16 (  6%, CI   1%- 28%)  strict  1/16  non-Korean msgs   1/61   runs w/ denial 11  leaks starting after denial  0/1
+  haiku.s_answer               leak runs  1/16 (  6%, CI   1%- 28%)  strict  1/16  non-Korean msgs   8/131  runs w/ denial  2  leaks starting after denial  0/1
+  haiku.s_during               leak runs  4/16 ( 25%, CI  10%- 49%)  strict  4/16  non-Korean msgs  17/106  runs w/ denial  0  leaks starting after denial  0/4
+  ja.s_answer                  leak runs  5/16 ( 31%, CI  14%- 56%)  strict  5/16  non-Korean msgs  10/58   runs w/ denial  1  leaks starting after denial  0/5
+  ja.s_during                  leak runs  2/16 ( 12%, CI   3%- 36%)  strict  2/16  non-Korean msgs   2/140  runs w/ denial  1  leaks starting after denial  0/2
+  real.s_answer                leak runs 10/16 ( 62%, CI  39%- 82%)  strict 10/16  non-Korean msgs  10/74   runs w/ denial  0  leaks starting after denial  0/10
+  real.s_during                leak runs  8/16 ( 50%, CI  28%- 72%)  strict  8/16  non-Korean msgs   8/68   runs w/ denial  0  leaks starting after denial  0/8
+
+excluded runs (model did not match the request): 0
+
+per arm, s_answer vs s_during, two-sided Fisher, run level:
+  sonnet  models=claude-sonnet-5-5  strict 4/16 vs 1/16 p = 0.3326  | any en/other 4/16 vs 1/16 p = 0.3326  | mixed too 4/16 vs 1/16 p = 0.3326
+  haiku   models=claude-haiku-5-5  strict 1/16 vs 4/16 p = 0.3326  | any en/other 1/16 vs 4/16 p = 0.3326  | mixed too 1/16 vs 4/16 p = 0.3326  [baseline <= 2/16: leak not reproduced, comparison not interpreted]
+  ja      models=claude-opus-5-5  strict 5/16 vs 2/16 p = 0.3944  | any en/other 5/16 vs 2/16 p = 0.3944  | mixed too 7/16 vs 4/16 p = 0.4578
+  real    models=claude-opus-5-5  strict 10/16 vs 8/16 p = 0.7224  | any en/other 10/16 vs 8/16 p = 0.7224  | mixed too 10/16 vs 8/16 p = 0.7224
+
+primary, Holm-adjusted over the arms that passed the baseline gate (alpha = 0.05):
+  sonnet  p = 0.3326  Holm p = 0.9978  no pass
+  ja      p = 0.3944  Holm p = 0.9978  no pass
+  real    p = 0.7224  Holm p = 0.9978  no pass
+
+per-run table: scope3/summary_runs.csv
+classifier audit sample: scope3/audit_sample.csv

@@ -4,7 +4,7 @@ When the user writes in Korean and Claude Code works through a tool loop, the sh
 
 Related issues: [anthropics/claude-code#32181](https://github.com/anthropics/claude-code/issues/32181), [#96326](https://github.com/anthropics/claude-code/issues/96326), [#96601](https://github.com/anthropics/claude-code/issues/96601).
 
-**Short version.** With a Korean prompt, the `language` setting and generic CLAUDE.md rules ("always answer in Korean", or a longer insistent version) still left English progress messages in about a quarter to nearly half of runs in the comparisons below. Of the CLAUDE.md texts tried, the ones that explicitly covered the progress notes between tool calls leaked in 1 of 48 runs, against 12 of 32 for the two that did not. A pre-registered follow-up on one task separated scope from naming: "write all user-visible text in Korean" leaked in 13 of 48 runs, "write the short notes you leave while working in Korean too" in 3 of 48 (p = 0.012). So the clause naming the during-work notes did more than broadening the rule, though neither removed the English entirely. All of this is one model, two small synthetic repositories and Korean only. Localising the repository's docs, logs and test output into Korean did not change the rate detectably.
+**Short version.** With a Korean prompt, the `language` setting and generic CLAUDE.md rules ("always answer in Korean", or a longer insistent version) still left English progress messages in about a quarter to nearly half of runs in the comparisons below. Of the CLAUDE.md texts tried, the ones that explicitly covered the progress notes between tool calls leaked in 1 of 48 runs, against 12 of 32 for the two that did not. A pre-registered follow-up on one task separated scope from naming: "write all user-visible text in Korean" leaked in 13 of 48 runs, "write the short notes you leave while working in Korean too" in 3 of 48 (p = 0.012). So the clause naming the during-work notes did more than broadening the rule, though neither removed the English entirely. A third pre-registered stage (section 6) then tried other models, Japanese and a real repository: under "always answer" the English notes showed up on Sonnet 5.5 (4/16), in Japanese (5/16) and on the real repository (10/16), but the during-work wording did not reduce them significantly anywhere, and on the real repository it left English in 8 of 16 runs. So that wording is not a reliable fix. Localising the repository's docs, logs and test output into Korean did not change the rate detectably.
 
 ## Setup
 
@@ -129,13 +129,26 @@ Every run above used headless `claude -p`. As a check on the interactive UI, 8 s
 
 No session leaked. The comparable headless cell (`ledger`, English output, one-line text, no denials) had 1/8, at which 0 of 4 happens about 59% of the time; the upper 95% bound for 0/4 is 49%. This check is too small to say whether the interactive UI behaves differently or whether either text works better there. Scoring used the session transcripts, not the rendered screen.
 
+### 6. Stage 3: other models, Japanese, a real repository (n = 128, pre-registered)
+
+`PREREG_scope3.md` has the plan and the full write-up. Four arms, each changing one thing from stages 1–2, each comparing "always answer in Korean/Japanese" (A) with "write the short notes you leave while working in Korean/Japanese too" (B), 16 runs per condition, strict outcome:
+
+| arm | A | B | Fisher p |
+|---|---|---|---|
+| Sonnet 5.5, Korean, synthetic | 4/16 | 1/16 | 0.33 |
+| Haiku 5.5, Korean, synthetic | 1/16 | 4/16 | 0.33 (below the pre-registered gate, not interpreted) |
+| Opus 5.5, Japanese, synthetic | 5/16 | 2/16 | 0.39 |
+| Opus 5.5, Korean, real repository | 10/16 | 8/16 | 0.72 |
+
+The real repository is [python-json-pointer](https://github.com/stefankoegl/python-json-pointer) with seven of its own upstream fixes reverted (the tests that came with them fail). There, every leaking run had a single English line, "(Now) let me look at the relevant/failing tests.", almost always as the first progress message. Haiku leaked differently: when it did, most or all of its progress messages were English. The Japanese row uses a corrected classifier: the pre-registered one mislabelled Japanese messages that contain a slash (the B cell was 4/16 with it); see the deviation note in `PREREG_scope3.md`.
+
 ## Limitations
 
 - All measured rates come from headless `-p` runs. The interactive check (section 5) is 8 sessions, driven through a pseudo-terminal rather than typed by a person.
-- Synthetic, small repositories, one natural language (Korean), and one main model (`claude-opus-5-5`) for most runs. #96601 reports the rate rose from Opus 5 to Opus 5.5; this repo has no Opus 5 comparison.
+- Apart from stage 3, synthetic small repositories, Korean, and `claude-opus-5-5`. #96601 reports the rate rose from Opus 5 to Opus 5.5; this repo has no Opus 5 comparison.
 - n is 3–8 per cell and the intervals are wide. The clearest results are base vs `language` setting in v4 and the within-batch wording contrasts in v8 and v10; the wording result is exploratory (v10 designed after v8) and does not identify which part of the text matters. Comparisons across batches (v4 vs v8 vs v9) are confounded with time of day.
 - One Claude Code version (2.1.311). Headless runs: 2026-11-22 14:47 to 2026-11-23 00:20 KST, by the first and last run logs (v4's `meta.json` start time is when the script was launched; it then waited for a usage reset). TUI check: 2026-11-23.
-- Stage 3 (pre-registered in `PREREG_scope3.md`, not yet run): "always answer" vs the during-work wording on Sonnet 5.5, Haiku 5.5, Japanese, and a real repository (python-json-pointer with seven reverted upstream fixes).
+- Stage 3 (section 6) covered two more models, Japanese and one real repository at 16 runs per condition, enough only for large differences; one prompt per setting.
 
 ## Reproduce
 
