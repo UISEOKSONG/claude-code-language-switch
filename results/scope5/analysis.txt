@@ -1,0 +1,43 @@
+experiment: scope5
+results:    results/scope5/run_stage5
+runs used:  288
+runs ended in an error and rerun (not used): 0
+headless runs, transcript vs stream-json strict label agree: 144/144
+
+strict leak runs overall: 85/288
+
+by mode:
+  headless        strict  44/144 ( 31%, CI  24- 39%)  any en/other  44  progress msgs/run  6.9
+  tui             strict  41/144 ( 28%, CI  22- 36%)  any en/other  41  progress msgs/run  6.7
+
+by model:
+  opus            strict  40/ 96 ( 42%, CI  32- 52%)  any en/other  40  progress msgs/run  6.1
+  sonnet          strict  31/ 96 ( 32%, CI  24- 42%)  any en/other  31  progress msgs/run  4.3
+  haiku           strict  14/ 96 ( 15%, CI   9- 23%)  any en/other  14  progress msgs/run 10.0
+
+by lang:
+  ko              strict  25/ 96 ( 26%, CI  18- 36%)  any en/other  25  progress msgs/run  6.8
+  ja              strict  32/ 96 ( 33%, CI  25- 43%)  any en/other  32  progress msgs/run  7.0
+  zh              strict  28/ 96 ( 29%, CI  21- 39%)  any en/other  28  progress msgs/run  6.5
+
+by repo:
+  jsonpointer     strict  15/ 72 ( 21%, CI  13- 32%)  any en/other  15  progress msgs/run  6.2
+  boltons         strict  23/ 72 ( 32%, CI  22- 43%)  any en/other  23  progress msgs/run  9.3
+  more-itertools  strict  43/ 72 ( 60%, CI  48- 70%)  any en/other  43  progress msgs/run  7.6
+  toolz           strict   4/ 72 (  6%, CI   2- 13%)  any en/other   4  progress msgs/run  3.9
+
+model x mode (strict):
+  opus     headless 20/48   tui 20/48
+  sonnet   headless 17/48   tui 14/48
+  haiku    headless 7/48   tui 7/48
+
+model x lang (strict):
+  opus     ko 9/32   ja 17/32   zh 14/32
+  sonnet   ko 8/32   ja 12/32   zh 11/32
+  haiku    ko 8/32   ja 3/32   zh 3/32
+
+primary: TUI vs headless, strict outcome, exact conditional test stratified by model x language x repository (36 strata)
+  TUI 41/144  headless 44/144  Mantel-Haenszel OR = 0.86  p = 0.7503
+
+final answers not in the target language: 1 runs
+leaking runs whose first strict leak is the first progress message: 62/85

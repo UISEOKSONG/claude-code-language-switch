@@ -63,3 +63,46 @@ The first self-check on the Mac stopped the batch before any run, as planned: to
 Two operational guards were added at the same time, before any run: the batch stops if the Mac has less than 1 GB of free disk space (it was nearly full), and only the first 2 MB of each TUI terminal stream is kept (the stream is not used for scoring).
 
 Correction after the first minutes of the batch (2026-11-25, 05:35 KST): Claude Code 2.1.311's folder-trust dialog defaults to "No, exit", so the driver's Enter closed the first two TUI sessions before the prompt was sent (logged as errors, no transcript, not used). The driver now selects "Yes, I trust this folder" on that dialog; nothing else changes. Two runs (both headless) had completed; they are kept, as they are unaffected.
+
+---
+
+## Results (added 2026-11-25, after all 288 runs)
+
+Runs: 2026-11-25, 05:26–18:25 KST, on the same Mac, Claude Code 2.1.311 throughout (auto-updater off, version checked before every run), seed 20261125. All 288 cells were completed with the requested model. Six runs ended in an error and were rerun in place, as planned: two TUI sessions closed by the folder-trust dialog before the driver fix (see above), two that lost the network (`ENOTFOUND`), and two TUI sessions that spanned the laptop sleeping in transit (one timed out, one never showed its input box). The batch also stopped twice on the 1 GB disk guard and was restarted; finished runs were kept. Transcript and stream-json gave the same strict label in 144/144 headless runs. Files: `results/scope5/` (per-run table, every progress message, blind-audit sheet), raw logs in `raw/scope5.tgz` (transcripts reduced to the user/assistant messages used for scoring; the session's environment, tool and account attachments are removed; TUI terminal streams are not published).
+
+### Primary
+
+| | strict leak runs |
+|---|---|
+| TUI | 41/144 (28%, 95% CI 22–36%) |
+| headless | 44/144 (31%, 24–39%) |
+
+Exact conditional test stratified by model × language × repository (36 strata): Mantel–Haenszel OR = 0.86, **p = 0.75**. More than 10 runs leaked, so the comparison is interpreted: no evidence that the interactive UI leaks at a different rate from headless runs. Per model the two modes were close: Opus 20/48 vs 20/48, Sonnet 14/48 vs 17/48, Haiku 7/48 vs 7/48 (TUI vs headless).
+
+### Descriptive (strict outcome, pooled over the other factors)
+
+| factor | level | leak runs |
+|---|---|---|
+| model | Opus 5.5 | 40/96 (42%, 32–52%) |
+| | Sonnet 5.5 | 31/96 (32%, 24–42%) |
+| | Haiku 5.5 | 14/96 (15%, 9–23%) |
+| language | Korean | 25/96 (26%, 18–36%) |
+| | Japanese | 32/96 (33%, 25–43%) |
+| | Chinese | 28/96 (29%, 21–39%) |
+| repository | jsonpointer | 15/72 (21%, 13–32%) |
+| | boltons | 23/72 (32%, 22–43%) |
+| | more-itertools | 43/72 (60%, 48–70%) |
+| | toolz | 4/72 (6%, 2–13%) |
+
+Model × language: Opus ko 9/32, ja 17/32, zh 14/32; Sonnet 8/32, 12/32, 11/32; Haiku 8/32, 3/32, 3/32. Repository × model: more-itertools Opus 20/24, Sonnet 17/24, Haiku 6/24; toolz Opus 4/24, Sonnet 0/24, Haiku 0/24.
+
+- In 62 of the 85 leaking runs the first English message was the first progress message. 126 progress messages were strict leaks; the most common was still "Let me look at the relevant tests." and close variants, but on these repositories many were mid-task explanations of a bug in English ("Outside a handler, `full_trace` is never set. I'll add a class-level default."). Ten runs had three or more English progress messages, six of them Haiku or Sonnet; in one Haiku run (Chinese, more-itertools, headless) every progress message and the final answer were English, the only non-target final answer in the batch.
+- With every user-side language setting on, the leak appeared in all three models, all three languages and all four repositories, in both interfaces; its rate depended far more on the repository (6% to 60%) and the model than on the language or the interface.
+
+### Not pre-registered (exploratory)
+
+On python-json-pointer, Opus with Korean leaked in 0/8 runs here, against 27/40 in stages 3–4, where only the CLAUDE.md sentence was set (stage 5 also sets `"language": "korean"` and runs on another day). This points at the `language` setting helping on that repository (Fisher p = 0.0005 for 0/8 vs 27/40), but it is a comparison across batches that this design did not plan, and with every setting on Opus/Korean still leaked in 6/8 runs on more-itertools. A direct test would put the `language` setting on and off within one batch.
+
+### Classifier audit
+
+`results/scope5/audit_blind.csv` holds the 126 strict-leak messages and 126 random other progress messages, shuffled, with no condition or label; the key is kept out of the repository until the audit is done. Its result will be added here.
