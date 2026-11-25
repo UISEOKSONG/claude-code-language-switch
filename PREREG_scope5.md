@@ -105,4 +105,10 @@ On python-json-pointer, Opus with Korean leaked in 0/8 runs here, against 27/40 
 
 ### Classifier audit
 
-`results/scope5/audit_blind.csv` holds the 126 strict-leak messages and 126 random other progress messages, shuffled, with no condition or label; the key is kept out of the repository until the audit is done. Its result will be added here.
+`results/scope5/audit_blind.csv` held the 126 strict-leak messages and 126 random other progress messages, shuffled, with no condition or label. The repository owner labelled them (a first pass with another model, then checked by eye) without the key; `audit_blind_reviewed.csv` has those labels and `audit_key.csv`, added afterwards, the classifier's.
+
+- Agreement on leak / no leak: 249 of 252 messages (98.8%). All 126 messages the classifier counted as strict leaks were labelled English (124) or another language (2) by the reviewer. The 2 "other" messages were Chinese text in a Korean session (Haiku, boltons, TUI, run 4), counted as leaks by both.
+- The 3 disagreements went the conservative way: short English lines ("Now `chunked_even`.", "Now chunked_even.", "Fix 1: `chunked`.") that fall under the classifier's 8-letter floor (`empty`) and were not counted. Two of them are in runs that leak anyway; one would add a leaking run (Sonnet, Korean, more-itertools, headless, run 1). With it, the primary comparison becomes TUI 41/144 vs headless 45/144, OR 0.82, p = 0.63; nothing else changes.
+- One message the classifier labelled Japanese the reviewer labelled mixed (not a leak under either rule).
+
+So the classifier's leak counts match a human reading, and if anything slightly undercount short English lines.

@@ -156,7 +156,7 @@ Stage 4 (`PREREG_scope4.md`, pre-registered) repeated the real-repository settin
 | Korean / Japanese / Chinese | 25/96 (26%) / 32/96 (33%) / 28/96 (29%) |
 | jsonpointer / boltons / more-itertools / toolz | 15/72 (21%) / 23/72 (32%) / 43/72 (60%) / 4/72 (6%) |
 
-The pre-registered test of TUI vs headless, stratified by model × language × repository, found no difference (Mantel–Haenszel OR 0.86, p = 0.75). So the earlier headless numbers are not an artefact of `claude -p`. Most leaks again started at the first progress message (62/85), but here they also included mid-task explanations of a bug in English, and some Haiku and Sonnet runs were mostly English. One unplanned comparison: Opus/Korean on python-json-pointer leaked in 0/8 runs with the `language` setting on, against 27/40 with only CLAUDE.md in stages 3–4, which is worth a direct test.
+The pre-registered test of TUI vs headless, stratified by model × language × repository, found no difference (Mantel–Haenszel OR 0.86, p = 0.75). So the earlier headless numbers are not an artefact of `claude -p`. Most leaks again started at the first progress message (62/85), but here they also included mid-task explanations of a bug in English, and some Haiku and Sonnet runs were mostly English. A blind human audit of 252 progress messages agreed with the classifier on leak / no leak for 249; the 3 misses were short English lines the classifier did not count. One unplanned comparison: Opus/Korean on python-json-pointer leaked in 0/8 runs with the `language` setting on, against 27/40 with only CLAUDE.md in stages 3–4, which is worth a direct test.
 
 ## Limitations
 
