@@ -80,7 +80,14 @@ REPOS = {
 }
 
 
+EXP = "scope5"  # "scope6" (PREREG_scope6.md): Opus, Korean, headless, the `language` setting on vs off
+
+
 def conditions():
+    if EXP == "scope6":
+        return [dict(model="opus", lang="ko", repo=r, mode="headless", setting=st,
+                     name=f"opus.ko.{r}.headless.{st}")
+                for r in ("jsonpointer", "more-itertools") for st in ("lang_on", "lang_off")]
     return [dict(model=m, lang=lg, repo=r, mode=md, name=f"{m}.{lg}.{r}.{md}")
             for m, lg, r, md in itertools.product(MODELS, LANGS, REPOS, MODES)]
 
@@ -119,6 +126,8 @@ def make_workspace(dst: Path, cond):
     settings = {"language": lg["setting"],
                 "hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
                     {"type": "command", "command": f"python3 '{hook}'"}]}]}}
+    if cond.get("setting") == "lang_off":  # stage 6: CLAUDE.md and prompt only
+        del settings["language"]
     (dst / ".claude" / "settings.json").write_text(json.dumps(settings, ensure_ascii=False, indent=2),
                                                    encoding="utf-8")
 
@@ -465,7 +474,7 @@ def cmd_run(args):
     results.mkdir(parents=True, exist_ok=True)
     meta_p = results / "meta.json"
     meta = json.loads(meta_p.read_text()) if meta_p.exists() else {
-        "experiment": "scope5", "seed": args.seed, "n": args.n, "claude_version": version(args.claude),
+        "experiment": EXP, "seed": args.seed, "n": args.n, "claude_version": version(args.claude),
         "user_claude_md_present": (CONFIG / "CLAUDE.md").exists(), "started": time.strftime("%Y-%m-%d %H:%M:%S"),
         "python": args.python, "attempts": []}
     if version(args.claude) != meta["claude_version"]:
@@ -476,7 +485,7 @@ def cmd_run(args):
             print("self-check failed; not running")
             sys.exit(3)
         meta["selfcheck"] = selfcheck.report
-    for m in MODELS.values():  # exit 1 here usually means the usage limit; the launcher waits and retries
+    for m in sorted({MODELS[c["model"]] for c in conditions()}):  # exit 1 here usually means the usage limit; the launcher waits and retries
         try:
             res = json.loads(subprocess.run([args.claude, "-p", "ok", "--output-format", "json", "--model", m],
                                             capture_output=True, text=True, timeout=120,
@@ -581,6 +590,11 @@ def rows_for(results: Path):
 
 def analyze(results: Path):
     import csv
+    global EXP
+    try:
+        EXP = json.loads((results / "meta.json").read_text())["experiment"]
+    except (OSError, ValueError, KeyError):
+        pass
     rows, msgs = rows_for(results)
     out = []
 
@@ -588,7 +602,7 @@ def analyze(results: Path):
         out.append(s)
         print(s, flush=True)
 
-    p(f"experiment: scope5\nresults:    {results}\nruns used:  {len(rows)}")
+    p(f"experiment: {EXP}\nresults:    {results}\nruns used:  {len(rows)}")
     errs = [json.loads(f.read_text())["error"] for f in results.glob("*/run_*.status.json")]
     p(f"runs ended in an error and rerun (not used): {sum(1 for e in errs if e)}")
     stream = [r for r in rows if "stream_agrees" in r]
@@ -609,6 +623,52 @@ def analyze(results: Path):
             p(f"  {lv:15s} strict {k:3d}/{len(rs):3d} ({100*k/len(rs):3.0f}%, CI {100*lo:3.0f}-{100*hi:3.0f}%)"
               f"  any en/other {ka:3d}  progress msgs/run {sum(r['progress'] for r in rs)/len(rs):4.1f}")
 
+    if EXP == "scope6":
+        analyze6(rows, p, margin)
+    else:
+        analyze5(rows, p, margin, tot)
+    p(f"\nfinal answers not in the target language: {sum(1 for r in rows if r['final_non_target'])} runs")
+    p(f"leaking runs whose first strict leak is the first progress message: "
+      f"{sum(1 for r in rows if r['first_strict'] == 1)}/{tot}")
+    if rows:
+        with open(results / "summary_runs.csv", "w", newline="", encoding="utf-8") as f:
+            keys = sorted({k for r in rows for k in r})
+            w = csv.DictWriter(f, fieldnames=keys)
+            w.writeheader()
+            w.writerows(rows)
+        with open(results / "messages.csv", "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=list(msgs[0]) if msgs else ["name"])
+            w.writeheader()
+            w.writerows(msgs)
+        blind_audit(results, msgs)
+    (results / "analysis.txt").write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def analyze6(rows, p, margin):
+    """Stage 6: `language` setting on vs off, stratified by repository (PREREG_scope6.md)."""
+    margin("setting", ["lang_on", "lang_off"])
+    margin("repo", ["jsonpointer", "more-itertools"])
+    strata = []
+    p("\nper repository (strict), lang_on vs lang_off, two-sided Fisher:")
+    for rp in ("jsonpointer", "more-itertools"):
+        on = [r for r in rows if r["repo"] == rp and r["setting"] == "lang_on"]
+        off = [r for r in rows if r["repo"] == rp and r["setting"] == "lang_off"]
+        if not on or not off:
+            continue
+        a, c = sum(r["leak_strict"] for r in on), sum(r["leak_strict"] for r in off)
+        p(f"  {rp:15s} on {a}/{len(on)}  off {c}/{len(off)}  p = "
+          f"{L.fisher_two_sided(a, len(on) - a, c, len(off) - c):.4f}")
+        strata.append((a, len(on), a + c, len(on) + len(off)))
+    pv, mh = exact_stratified(strata)
+    ton = [r for r in rows if r["setting"] == "lang_on"]
+    toff = [r for r in rows if r["setting"] == "lang_off"]
+    p("\nprimary: `language` setting on vs off, strict outcome, exact conditional test stratified by repository")
+    p(f"  on {sum(r['leak_strict'] for r in ton)}/{len(ton)}  off {sum(r['leak_strict'] for r in toff)}/{len(toff)}"
+      f"  Mantel-Haenszel OR (on vs off) = {mh:.2f}  p = {pv:.4f}"
+      f"{'' if sum(r['leak_strict'] for r in toff) >= 5 else '  [off leaked in fewer than 5 runs: not interpreted]'}")
+
+
+def analyze5(rows, p, margin, tot):
     margin("mode", MODES)
     margin("model", MODELS)
     margin("lang", LANGS)
@@ -641,21 +701,6 @@ def analyze(results: Path):
       f"  headless {sum(r['leak_strict'] for r in rows if r['mode'] == 'headless')}/"
       f"{sum(1 for r in rows if r['mode'] == 'headless')}  Mantel-Haenszel OR = {mh:.2f}  p = {pv:.4f}"
       f"{'' if tot >= 10 else '  [fewer than 10 leaking runs overall: not interpreted]'}")
-    p(f"\nfinal answers not in the target language: {sum(1 for r in rows if r['final_non_target'])} runs")
-    p(f"leaking runs whose first strict leak is the first progress message: "
-      f"{sum(1 for r in rows if r['first_strict'] == 1)}/{tot}")
-    if rows:
-        with open(results / "summary_runs.csv", "w", newline="", encoding="utf-8") as f:
-            keys = sorted({k for r in rows for k in r})
-            w = csv.DictWriter(f, fieldnames=keys)
-            w.writeheader()
-            w.writerows(rows)
-        with open(results / "messages.csv", "w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=list(msgs[0]) if msgs else ["name"])
-            w.writeheader()
-            w.writerows(msgs)
-        blind_audit(results, msgs)
-    (results / "analysis.txt").write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
 def blind_audit(results: Path, msgs):
@@ -689,12 +734,15 @@ def main():
     r.add_argument("--seed", type=int, required=True)
     r.add_argument("--n", type=int, default=4)
     r.add_argument("--resume", required=True)
+    r.add_argument("--experiment", default="scope5", choices=["scope5", "scope6"])
     a = sub.add_parser("analyze")
     a.add_argument("--dir", required=True)
     args = ap.parse_args()
     if args.cmd == "selfcheck":
         sys.exit(selfcheck(args.python))
     if args.cmd == "run":
+        global EXP
+        EXP = args.experiment
         cmd_run(args)
     else:
         analyze(Path(args.dir))
