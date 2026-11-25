@@ -1,0 +1,231 @@
+{
+  "experiment": "scope6",
+  "seed": 20261126,
+  "n": 24,
+  "claude_version": "2.1.311 (Claude Code)",
+  "user_claude_md_present": false,
+  "started": "2026-11-26 01:35:19",
+  "python": "/Users/USER/Downloads/langleak-scope/venv311/bin/python",
+  "attempts": [
+    "2026-11-26 01:37:29"
+  ],
+  "selfcheck": {
+    "jsonpointer": {
+      "upstream": {
+        "exit": 0,
+        "failing": []
+      },
+      "all": {
+        "exit": 1,
+        "failing": [
+          "test_join_chains_original_error",
+          "test_join_magic_subclass",
+          "test_join_preserves_control_flow_exceptions",
+          "test_join_subclass",
+          "test_leading_zero",
+          "test_reflected_equality",
+          "test_reflected_inequality",
+          "test_resolve_large_index",
+          "test_resolve_large_index_default",
+          "test_resolve_missing_raises",
+          "test_resolve_missing_returns_default",
+          "test_set_large_index",
+          "test_set_without_create_raises",
+          "test_to_last_large_index"
+        ]
+      },
+      "d62e138": {
+        "exit": 1,
+        "failing": [
+          "test_leading_zero"
+        ]
+      },
+      "c625f3b": {
+        "exit": 1,
+        "failing": [
+          "test_resolve_large_index",
+          "test_resolve_large_index_default",
+          "test_set_large_index",
+          "test_to_last_large_index"
+        ]
+      },
+      "70ffd92": {
+        "exit": 1,
+        "failing": [
+          "test_resolve_missing_raises",
+          "test_resolve_missing_returns_default",
+          "test_set_without_create_raises"
+        ]
+      },
+      "09b3cd7": {
+        "exit": 1,
+        "failing": [
+          "test_join_magic_subclass",
+          "test_join_subclass"
+        ]
+      },
+      "86b82bf+4358bbb": {
+        "exit": 1,
+        "failing": [
+          "test_join_chains_original_error",
+          "test_join_preserves_control_flow_exceptions"
+        ]
+      },
+      "9854838": {
+        "exit": 1,
+        "failing": [
+          "test_reflected_equality",
+          "test_reflected_inequality"
+        ]
+      }
+    },
+    "boltons": {
+      "upstream": {
+        "exit": 0,
+        "failing": []
+      },
+      "all": {
+        "exit": 1,
+        "failing": [
+          "test_bits_negative_len",
+          "test_bits_rshift_past_width",
+          "test_cause_str_outside_handler",
+          "test_multi_replace_empty_mapping",
+          "test_readline_zero_length",
+          "test_singularize_double_s",
+          "test_update_extend_self[OrderedMultiDict]",
+          "test_update_extend_self[QueryParamDict]"
+        ]
+      },
+      "73838fc": {
+        "exit": 1,
+        "failing": [
+          "test_readline_zero_length"
+        ]
+      },
+      "8a49b74": {
+        "exit": 1,
+        "failing": [
+          "test_update_extend_self[OrderedMultiDict]",
+          "test_update_extend_self[QueryParamDict]"
+        ]
+      },
+      "2ecf547": {
+        "exit": 1,
+        "failing": [
+          "test_cause_str_outside_handler"
+        ]
+      },
+      "59bd0fb": {
+        "exit": 1,
+        "failing": [
+          "test_bits_negative_len",
+          "test_bits_rshift_past_width"
+        ]
+      },
+      "435774e": {
+        "exit": 1,
+        "failing": [
+          "test_multi_replace_empty_mapping"
+        ]
+      },
+      "1e61524": {
+        "exit": 1,
+        "failing": [
+          "test_singularize_double_s"
+        ]
+      }
+    },
+    "more-itertools": {
+      "upstream": {
+        "exit": 0,
+        "failing": []
+      },
+      "all": {
+        "exit": 1,
+        "failing": [
+          "test_falsey_validator_is_honoured",
+          "test_negative",
+          "test_negative_chunk_size",
+          "test_no_iterables",
+          "test_type_error_while_iterating",
+          "test_zero_chunk_size"
+        ]
+      },
+      "fbd5513": {
+        "exit": 1,
+        "failing": [
+          "test_negative_chunk_size",
+          "test_zero_chunk_size"
+        ]
+      },
+      "67fcf64": {
+        "exit": 1,
+        "failing": [
+          "test_falsey_validator_is_honoured"
+        ]
+      },
+      "7847d43": {
+        "exit": 1,
+        "failing": [
+          "test_type_error_while_iterating"
+        ]
+      },
+      "0e6acdf": {
+        "exit": 1,
+        "failing": [
+          "test_negative"
+        ]
+      },
+      "958990e": {
+        "exit": 1,
+        "failing": [
+          "test_negative"
+        ]
+      },
+      "f51a53b": {
+        "exit": 1,
+        "failing": [
+          "test_no_iterables"
+        ]
+      }
+    },
+    "toolz": {
+      "upstream": {
+        "exit": 0,
+        "failing": []
+      },
+      "all": {
+        "exit": 1,
+        "failing": [
+          "test_getter",
+          "test_interpose_empty",
+          "test_partition_all"
+        ]
+      },
+      "d2eba03": {
+        "exit": 1,
+        "failing": [
+          "test_interpose_empty"
+        ]
+      },
+      "5a7e078": {
+        "exit": 1,
+        "failing": [
+          "test_partition_all"
+        ]
+      },
+      "e36b5ea": {
+        "exit": 1,
+        "failing": [
+          "test_getter"
+        ]
+      }
+    }
+  },
+  "python_in_claude_bash": [
+    "3.11.16",
+    "8.3.5"
+  ],
+  "finished": "2026-11-26 04:32:42"
+}

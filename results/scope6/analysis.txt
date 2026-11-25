@@ -1,0 +1,25 @@
+experiment: scope6
+results:    results/scope6/run_stage6
+runs used:  96
+runs ended in an error and rerun (not used): 0
+headless runs, transcript vs stream-json strict label agree: 96/96
+
+strict leak runs overall: 61/96
+
+by setting:
+  lang_on         strict  30/ 48 ( 62%, CI  48- 75%)  any en/other  30  progress msgs/run  6.2
+  lang_off        strict  31/ 48 ( 65%, CI  50- 77%)  any en/other  31  progress msgs/run  6.4
+
+by repo:
+  jsonpointer     strict  21/ 48 ( 44%, CI  31- 58%)  any en/other  21  progress msgs/run  5.3
+  more-itertools  strict  40/ 48 ( 83%, CI  70- 91%)  any en/other  40  progress msgs/run  7.4
+
+per repository (strict), lang_on vs lang_off, two-sided Fisher:
+  jsonpointer     on 12/24  off 9/24  p = 0.5612
+  more-itertools  on 18/24  off 22/24  p = 0.2448
+
+primary: `language` setting on vs off, strict outcome, exact conditional test stratified by repository
+  on 30/48  off 31/48  Mantel-Haenszel OR (on vs off) = 0.90  p = 1.0000
+
+final answers not in the target language: 0 runs
+leaking runs whose first strict leak is the first progress message: 61/61

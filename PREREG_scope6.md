@@ -31,3 +31,21 @@ With 24 runs per cell, Fisher's test at α = 0.05 has about 98% power for 65% vs
 ## Not covered
 
 One model, one language, two repositories, headless only, one prompt.
+
+---
+
+## Results (added 2026-11-26, after all 96 runs)
+
+Run on 2026-11-26, 01:34–04:32 KST, same Mac, Claude Code 2.1.311, seed 20261126. All 96 runs finished on the first attempt with the requested model; no run was rerun. Transcript and stream-json agreed on the strict label in 96/96 runs. Files: `results/scope6/`, raw logs in `raw/scope6.tgz` (reduced as in stage 5).
+
+| | `language` on | `language` off | Fisher p |
+|---|---|---|---|
+| jsonpointer | 12/24 | 9/24 | 0.56 |
+| more-itertools | 18/24 | 22/24 | 0.24 |
+| both | 30/48 (62%) | 31/48 (65%) | |
+
+**Primary:** stratified exact test, Mantel–Haenszel OR (on vs off) = 0.90, **p = 1.00**. The setting-off arm leaked in 31/48 runs, so the comparison is interpreted: no evidence that the `language` setting reduces the English progress notes beyond the CLAUDE.md rule and the Korean prompt.
+
+- Every one of the 61 leaking runs leaked at its first progress message; the most common lines were again "Let me look at the relevant tests and code." and close variants (73 strict-leak messages in all; 8 runs had more than one). No final answer was in another language.
+- The stage-5 contrast that motivated this stage (python-json-pointer, Opus/Korean, 0/8 with the setting on) did not hold: with the setting on, the same cell leaked in 12/24 runs here. The 0/8 was most likely chance or a difference between batches.
+- Taken with stages 3–5: on these repositories, for Opus and Korean, none of the user-side options tried (two CLAUDE.md wordings, the system-prompt append, the `language` setting, and all of them together in stage 5) stopped the opening English line.
